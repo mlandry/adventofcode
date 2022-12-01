@@ -1,4 +1,5 @@
 java_binary(
-    name = "Day01",
-    srcs = ["Day01.java"],
+    name = "CalorieCounter",
+    srcs = ["CalorieCounter.java"],
+    resources = ["input.txt"],
 )

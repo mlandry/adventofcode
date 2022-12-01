@@ -22,6 +22,7 @@ if language == "java":
     f.write(f"java_binary(\n")
     f.write(f"    name = \"{classname}\",\n")
     f.write(f"    srcs = [\"{classname}.java\"],\n")
+    f.write(f"    resources = [\"input.txt\"],\n")
     f.write(f")\n")
     f.close()
 
@@ -37,3 +38,9 @@ if language == "java":
     f.close()
 else:
     print(f"Unrecognized language: {language}")
+
+print(f"Writing input.txt ...")
+txt = os.path.join(directory, "input.txt")
+f = open(txt, "w")
+f.close()
+

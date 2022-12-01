@@ -11,8 +11,8 @@ workspace = os.environ['BUILD_WORKING_DIRECTORY']
 if language == "java":
     classname = input("Filename [Day%02d]: " % day) or "Day%02d" % day
 
-    directory = os.path.join(
-        workspace, "src/main/java/aoc%d/day%02d/" % (year, day))
+    package = "aoc%d/day%02d" % (year, day)
+    directory = os.path.join(workspace, f"src/main/java/{package}/")
     print(f"Making directory ... {directory}")
     os.makedirs(directory, exist_ok=True)
 
@@ -31,9 +31,19 @@ if language == "java":
     f = open(file, "w")
     f.write(f"package aoc%d.day%02d;\n" % (year, day))
     f.write(f"\n")
+    f.write(f"import java.io.BufferedReader;\n")
+    f.write(f"import java.io.IOException;\n")
+    f.write(f"import java.io.InputStreamReader;\n")
+    f.write(f"\n")
     f.write(f"class {classname} {{\n")
-    f.write(f"    public static void main(String [] args) {{\n")
-    f.write(f"    }}\n")
+    f.write(f"  public static void main(String [] args) throws Exception {{\n")
+    f.write(f"  }}\n")
+    f.write(f"\n")
+    f.write(f"  private static BufferedReader inputReader() throws IOException {{\n")
+    f.write(f"    return new BufferedReader(\n")
+    f.write(f"        new InputStreamReader(\n")
+    f.write(f"            {classname}.class.getClassLoader().getResourceAsStream(\"{package}/input.txt\")));\n")
+    f.write(f"  }}\n")
     f.write(f"}}\n")
     f.close()
 else:

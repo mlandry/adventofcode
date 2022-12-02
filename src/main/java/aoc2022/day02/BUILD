@@ -1,5 +1,5 @@
 java_binary(
-    name = "RockPaperScissors",
+    name = "rock_paper_scissors",
     srcs = ["RockPaperScissors.java"],
     resources = glob(["*.txt"]),
     deps = [

@@ -24,7 +24,7 @@ if language == "java":
     f.write(f"java_binary(\n")
     f.write(f"    name = \"{classname}\",\n")
     f.write(f"    srcs = [\"{classname}.java\"],\n")
-    f.write(f"    resources = [\"input.txt\"],\n")
+    f.write(f"    resources = glob([\"*.txt\"]),\n")
     f.write(f")\n")
     f.close()
 

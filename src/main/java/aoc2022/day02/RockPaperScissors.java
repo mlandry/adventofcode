@@ -1,14 +1,15 @@
 package aoc2022.day02;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import aoccommon.InputHelper;
+
 class RockPaperScissors {
+
+  private static final String INPUT = "aoc2022/day02/input.txt";
 
   private static enum Shape {
     ROCK,
@@ -40,7 +41,7 @@ class RockPaperScissors {
       Shape.SCISSORS, 3);
 
   public static void main(String[] args) throws Exception {
-    List<String[]> strategyGuide = inputReader().lines()
+    List<String[]> strategyGuide = InputHelper.linesFromResource(INPUT)
         .map(line -> line.split(" "))
         .collect(Collectors.toList());
 
@@ -97,11 +98,5 @@ class RockPaperScissors {
       default:
         throw new IllegalArgumentException();
     }
-  }
-
-  private static BufferedReader inputReader() throws IOException {
-    return new BufferedReader(
-        new InputStreamReader(
-            RockPaperScissors.class.getClassLoader().getResourceAsStream("aoc2022/day02/input.txt")));
   }
 }

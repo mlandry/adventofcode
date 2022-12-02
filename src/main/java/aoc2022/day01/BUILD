@@ -3,5 +3,6 @@ java_binary(
     srcs = ["CalorieCounter.java"],
     resources = ["input.txt"],
     deps = [
+      "//src/main/java/aoccommon:aoccommon",
     ],
 )

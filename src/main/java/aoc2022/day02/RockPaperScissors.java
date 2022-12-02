@@ -16,6 +16,14 @@ class RockPaperScissors {
     SCISSORS,
   }
 
+  private static final Map<Shape, Shape> MOVE_TO_WIN = Map.of(
+      Shape.ROCK, Shape.PAPER,
+      Shape.PAPER, Shape.SCISSORS,
+      Shape.SCISSORS, Shape.ROCK);
+
+  private static final Map<Shape, Shape> MOVE_TO_LOSE = MOVE_TO_WIN.entrySet().stream()
+      .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+
   private static final Map<String, Shape> PLAYS = Map.of(
       // Opponent plays.
       "A", Shape.ROCK,
@@ -36,12 +44,39 @@ class RockPaperScissors {
         .map(line -> line.split(" "))
         .collect(Collectors.toList());
 
-    int score = strategyGuide.stream()
+    int part1Score = strategyGuide.stream()
         .map(split -> Arrays.stream(split).map(PLAYS::get).toArray(Shape[]::new))
         .mapToInt(RockPaperScissors::getScore)
         .sum();
+    System.out.println("Part 1: " + part1Score);
 
-    System.out.println("Part 1: " + score);
+    int part2Score = strategyGuide.stream()
+        .map(RockPaperScissors::selectPlays)
+        .mapToInt(RockPaperScissors::getScore)
+        .sum();
+    System.out.println("Part 2: " + part2Score);
+  }
+
+  private static Shape[] selectPlays(String[] strategy) {
+    Shape opponentPlay = PLAYS.get(strategy[0]);
+    Shape responsePlay = null;
+    switch (strategy[1]) {
+      case "X":
+        // Lose.
+        responsePlay = MOVE_TO_LOSE.get(opponentPlay);
+        break;
+      case "Y":
+        // Draw.
+        responsePlay = opponentPlay;
+        break;
+      case "Z":
+        // Win.
+        responsePlay = MOVE_TO_WIN.get(opponentPlay);
+        break;
+      default:
+        throw new IllegalArgumentException();
+    }
+    return new Shape[] { opponentPlay, responsePlay };
   }
 
   private static int getScore(Shape[] plays) {
@@ -60,7 +95,7 @@ class RockPaperScissors {
       case SCISSORS:
         return responsePlay == Shape.ROCK ? 6 : 0;
       default:
-        return -1;
+        throw new IllegalArgumentException();
     }
   }
 

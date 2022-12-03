@@ -2,12 +2,15 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 import os
+import re
 
 today = datetime.now(timezone(timedelta(hours=-5)))
 
 year = int(input(f"Year [{today.year}]: ") or today.year)
 day = int(input(f"Day [{today.day}]: ") or today.day)
 language = input(f"Language [java]: ") or "java"
+
+camel_to_snake_pattern = re.compile(r'(?<!^)(?=[A-Z])')
 
 workspace = os.environ['BUILD_WORKING_DIRECTORY']
 if language == "java":
@@ -22,7 +25,7 @@ if language == "java":
     build = os.path.join(directory, "BUILD")
     f = open(build, "w")
     f.write(f"java_binary(\n")
-    f.write(f"    name = \"{classname}\",\n")
+    f.write(f"    name = \"{camel_to_snake_pattern.sub('_', classname).lower()}\",\n")
     f.write(f"    srcs = [\"{classname}.java\"],\n")
     f.write(f"    resources = glob([\"*.txt\"]),\n")
     f.write(f"    deps = [\n")

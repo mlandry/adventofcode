@@ -10,8 +10,6 @@ year = int(input(f"Year [{today.year}]: ") or today.year)
 day = int(input(f"Day [{today.day}]: ") or today.day)
 language = input(f"Language [java]: ") or "java"
 
-camel_to_snake_pattern = re.compile(r'(?<!^)(?=[A-Z])')
-
 workspace = os.environ['BUILD_WORKING_DIRECTORY']
 if language == "java":
     classname = input("Filename [Day%02d]: " % day) or "Day%02d" % day
@@ -25,7 +23,7 @@ if language == "java":
     build = os.path.join(directory, "BUILD")
     f = open(build, "w")
     f.write(f"java_binary(\n")
-    f.write(f"    name = \"{camel_to_snake_pattern.sub('_', classname).lower()}\",\n")
+    f.write(f"    name = \"{classname}\",\n")
     f.write(f"    srcs = [\"{classname}.java\"],\n")
     f.write(f"    resources = glob([\"*.txt\"]),\n")
     f.write(f"    deps = [\n")
@@ -41,7 +39,7 @@ if language == "java":
     f.write(f"\n")
     f.write(f"class {classname} {{\n")
     f.write(f"\n")
-    f.write(f"  public static final String INPUT = \"{package}/input.txt\";\n")
+    f.write(f"  private static final String INPUT = \"{package}/input.txt\";\n")
     f.write(f"\n")
     f.write(f"  public static void main(String [] args) throws Exception {{\n")
     f.write(f"  }}\n")

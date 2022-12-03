@@ -1,5 +1,5 @@
 java_binary(
-    name = "rucksack_reorganizer",
+    name = "RucksackReorganizer",
     srcs = ["RucksackReorganizer.java"],
     resources = glob(["*.txt"]),
     deps = [

@@ -11,6 +11,9 @@ day = int(input(f"Day [{today.day}]: ") or today.day)
 language = input(f"Language [java]: ") or "java"
 
 workspace = os.environ['BUILD_WORKING_DIRECTORY']
+
+aoc_url = f"https://adventofcode.com/{year}/day/{day}"
+
 if language == "java":
     classname = input("Filename [Day%02d]: " % day) or "Day%02d" % day
 
@@ -37,6 +40,7 @@ if language == "java":
     f = open(file, "w")
     f.write(f"package aoc%d.day%02d;\n" % (year, day))
     f.write(f"\n")
+    f.write(f"/** Solution for {aoc_url}. */")
     f.write(f"class {classname} {{\n")
     f.write(f"\n")
     f.write(f"  private static final String INPUT = \"{package}/input.txt\";\n")

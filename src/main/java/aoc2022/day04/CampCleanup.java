@@ -11,19 +11,21 @@ import aoccommon.Range;
 public class CampCleanup {
   private static final String INPUT = "aoc2022/day04/input.txt";
 
-  public static void main(String [] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     List<List<Range<Integer>>> assignments = InputHelper.linesFromResource(INPUT)
         .map(CampCleanup::parse)
         .collect(Collectors.toList());
 
     long fullyContainedAssignmentPairs = assignments.stream()
-        .filter(assignment -> assignment.get(0).contains(assignment.get(1)) || assignment.get(1).contains(assignment.get(0)))
+        .filter(assignment -> assignment.get(0).contains(assignment.get(1))
+            || assignment.get(1).contains(assignment.get(0)))
         .count();
 
     System.out.println("Part 1: " + fullyContainedAssignmentPairs);
 
     long overlappingAssignmentPairs = assignments.stream()
-        .filter(assignment -> assignment.get(0).overlaps(assignment.get(1)) || assignment.get(1).overlaps(assignment.get(0)))
+        .filter(assignment -> assignment.get(0).overlaps(assignment.get(1))
+            || assignment.get(1).overlaps(assignment.get(0)))
         .count();
 
     System.out.println("Part 2: " + overlappingAssignmentPairs);
@@ -36,7 +38,7 @@ public class CampCleanup {
   }
 
   private static Range<Integer> parseRange(String range) {
-    String [] split = range.split("-");
+    String[] split = range.split("-");
     return Range.closed(Integer.parseInt(split[0]), Integer.parseInt(split[1]));
   }
 }

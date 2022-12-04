@@ -59,7 +59,7 @@ public class Range<T extends Comparable<T>> {
 
   public boolean overlaps(Range<T> other) {
     if (!other.lowerClosed() || !other.upperClosed()) {
-      throw new IllegalArgumentException("Can't check if range contains open range.");
+      throw new IllegalArgumentException("Can't check if range overlaps open range.");
     }
     return contains(other.lower()) || contains(other.upper());
   }

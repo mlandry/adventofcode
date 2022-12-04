@@ -50,6 +50,13 @@ public class Range<T extends Comparable<T>> {
     return (lowerClosed ? lowerCompare <= 0 : lowerCompare < 0) && (upperClosed ? upperCompare <= 0 : upperCompare < 0);
   }
 
+  public boolean contains(Range<T> other) {
+    if (!other.lowerClosed() || !other.upperClosed()) {
+      throw new IllegalArgumentException("Can't check if range contains open range.");
+    }
+    return contains(other.lower()) && contains(other.upper());
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(lower, lowerClosed, upper, upperClosed);
@@ -60,7 +67,7 @@ public class Range<T extends Comparable<T>> {
     if (!(other instanceof Range)) {
       return false;
     }
-    Range otherRange = (Range) other;
+    Range<?> otherRange = (Range<?>) other;
     return Objects.equals(lower, otherRange.lower) && lowerClosed == otherRange.lowerClosed
         && Objects.equals(upper, otherRange.upper) && upperClosed == otherRange.upperClosed;
   }

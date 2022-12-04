@@ -21,6 +21,12 @@ public class CampCleanup {
         .count();
 
     System.out.println("Part 1: " + fullyContainedAssignmentPairs);
+
+    long overlappingAssignmentPairs = assignments.stream()
+        .filter(assignment -> assignment.get(0).overlaps(assignment.get(1)) || assignment.get(1).overlaps(assignment.get(0)))
+        .count();
+
+    System.out.println("Part 2: " + overlappingAssignmentPairs);
   }
 
   private static List<Range<Integer>> parse(String line) {

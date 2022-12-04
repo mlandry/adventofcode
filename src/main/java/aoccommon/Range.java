@@ -57,6 +57,13 @@ public class Range<T extends Comparable<T>> {
     return contains(other.lower()) && contains(other.upper());
   }
 
+  public boolean overlaps(Range<T> other) {
+    if (!other.lowerClosed() || !other.upperClosed()) {
+      throw new IllegalArgumentException("Can't check if range contains open range.");
+    }
+    return contains(other.lower()) || contains(other.upper());
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(lower, lowerClosed, upper, upperClosed);

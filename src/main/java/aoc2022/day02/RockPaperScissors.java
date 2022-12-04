@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import aoccommon.InputHelper;
 
+/** Solution for {@link https://adventofcode.com/2022/day/2}. */
 class RockPaperScissors {
 
   private static final String INPUT = "aoc2022/day02/input.txt";

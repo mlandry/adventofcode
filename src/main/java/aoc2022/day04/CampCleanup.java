@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import aoccommon.InputHelper;
 import aoccommon.Range;
 
-/** Solution for https://adventofcode.com/2022/day/4. */
+/** Solution for {@link https://adventofcode.com/2022/day/4}. */
 public class CampCleanup {
   private static final String INPUT = "aoc2022/day04/input.txt";
 

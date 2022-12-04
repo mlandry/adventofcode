@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import aoccommon.InputHelper;
 
+/** Solution for {@link https://adventofcode.com/2022/day/1}. */
 class CalorieCounter {
 
   private static final String INPUT = "aoc2022/day01/input.txt";

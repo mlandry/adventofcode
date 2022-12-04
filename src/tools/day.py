@@ -40,7 +40,7 @@ if language == "java":
     f = open(file, "w")
     f.write(f"package aoc%d.day%02d;\n" % (year, day))
     f.write(f"\n")
-    f.write(f"/** Solution for {aoc_url}. */\n")
+    f.write(f"/** Solution for {{@link {aoc_url}}}. */\n")
     f.write(f"public class {classname} {{\n")
     f.write(f"\n")
     f.write(f"  private static final String INPUT = \"{package}/input.txt\";\n")

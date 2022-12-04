@@ -5,5 +5,6 @@ package aoc2022.day04;
   private static final String INPUT = "aoc2022/day04/input.txt";
 
   public static void main(String [] args) throws Exception {
+    
   }
 }

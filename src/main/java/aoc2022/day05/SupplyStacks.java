@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import aoccommon.InputHelper;
 
@@ -36,10 +37,36 @@ public class SupplyStacks {
       }
       stackIndex.put(c - '0', j);
     }
+    List<Instruction> instructions = lines.stream().skip(i + 1).map(Instruction::parse).collect(Collectors.toList());
 
+    // Part 1.
+    Map<Integer, Deque<Character>> stacks = initializeStacks(lines, i - 2, stackIndex);
+    for (Instruction instruction : instructions) {
+      for (int n = 0; n < instruction.number; n++) {
+        stacks.get(instruction.to).push(stacks.get(instruction.from).pop());
+      }
+    }
+    System.out.println("Part 1: " + getTopOfStackString(stacks));
+
+    // Part 2.
+    stacks = initializeStacks(lines, i - 2, stackIndex);
+    for (Instruction instruction : instructions) {
+      Deque<Character> staging = new ArrayDeque<>();
+      for (int n = 0; n < instruction.number; n++) {
+        staging.push(stacks.get(instruction.from).pop());
+      }
+      for (int n = 0; n < instruction.number; n++) {
+        stacks.get(instruction.to).push(staging.pop());
+      }
+    }
+    System.out.println("Part 2: " + getTopOfStackString(stacks));
+  }
+
+  private static Map<Integer, Deque<Character>> initializeStacks(List<String> lines, int start,
+      Map<Integer, Integer> stackIndex) {
     Map<Integer, Deque<Character>> stacks = new HashMap<>();
-    for (int j = i - 2; j >= 0; j--) {
-      line = lines.get(j);
+    for (int j = start; j >= 0; j--) {
+      String line = lines.get(j);
       for (Map.Entry<Integer, Integer> entry : stackIndex.entrySet()) {
         char c = line.charAt(entry.getValue());
         if (Character.isWhitespace(c)) {
@@ -48,10 +75,13 @@ public class SupplyStacks {
         stacks.computeIfAbsent(entry.getKey(), k -> new ArrayDeque<>()).push(c);
       }
     }
+    return stacks;
+  }
 
-    List<Instruction> instructions = lines.stream().skip(i + 1).map(Instruction::parse).collect(Collectors.toList());
-
-    
+  private static String getTopOfStackString(Map<Integer, Deque<Character>> stacks) {
+    return IntStream.range(1, stacks.size() + 1)
+        .mapToObj(n -> stacks.get(n).peek().toString())
+        .collect(Collectors.joining());
   }
 
   private static class Instruction {

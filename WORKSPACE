@@ -1,5 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 # Java Guava stuff.
 http_archive(
@@ -13,7 +13,8 @@ load("@google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules
 
 google_common_workspace_rules()
 
-# Kotlin stuff
+
+# Kotlin stuff.
 rules_kotlin_version = "1.6.0"
 rules_kotlin_sha = "a57591404423a52bd6b18ebba7979e8cd2243534736c5c94d35c89718ea38f94"
 http_archive(

@@ -1,5 +1,3 @@
-load("@io_bazel_rules_kotlin//kotlin:jvm.bzl", "kt_jvm_binary")
-
 java_binary(
     name = "CalorieCounter",
     srcs = ["CalorieCounter.java"],

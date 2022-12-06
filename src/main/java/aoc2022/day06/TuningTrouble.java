@@ -15,6 +15,9 @@ public class TuningTrouble {
     String datastream = InputHelper.linesFromResource(INPUT).findFirst().get();
     int marker = findMarker(datastream, 4);
     System.out.println("Part 1: " + marker);
+
+    marker = findMarker(datastream, 14);
+    System.out.println("Part 2: " + marker);
   }
 
   private static boolean allDistinct(List<Character> buffer) {

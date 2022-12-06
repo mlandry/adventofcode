@@ -13,24 +13,26 @@ public class TuningTrouble {
 
   public static void main(String [] args) throws Exception {
     String datastream = InputHelper.linesFromResource(INPUT).findFirst().get();
-    LinkedList<Character> buffer = new LinkedList<>();
-
-    int i = 0;
-    for (; i < datastream.length(); i++) {
-      char c = datastream.charAt(i);
-      if (buffer.size() == 4) {
-        buffer.removeFirst();
-      }
-      buffer.addLast(c);
-      if (buffer.size() == 4 && allDistinct(buffer)) {
-        break;
-      }
-    }
-    int marker = i + 1;
+    int marker = findMarker(datastream, 4);
     System.out.println("Part 1: " + marker);
   }
 
   private static boolean allDistinct(List<Character> buffer) {
     return new HashSet<>(buffer).size() == buffer.size();
+  }
+
+  private static int findMarker(String datastream, int length) {
+    LinkedList<Character> buffer = new LinkedList<>();
+    for (int i = 0; i < datastream.length(); i++) {
+      char c = datastream.charAt(i);
+      if (buffer.size() == length) {
+        buffer.removeFirst();
+      }
+      buffer.addLast(c);
+      if (buffer.size() == length && allDistinct(buffer)) {
+        return i + 1;
+      }
+    }
+    return -1;
   }
 }

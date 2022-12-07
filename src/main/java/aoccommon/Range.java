@@ -1,6 +1,5 @@
 package aoccommon;
 
-import java.util.Objects;
 import java.util.stream.IntStream;
 
 public record Range<T extends Comparable<T>>(T lower, boolean lowerClosed, T upper, boolean upperClosed) {

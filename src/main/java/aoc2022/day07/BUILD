@@ -3,6 +3,6 @@ java_binary(
     srcs = ["DiskCleaner.java"],
     resources = glob(["*.txt"]),
     deps = [
-      "//src/main/java/aoccommon:aoccommon",
+        "//src/main/java/aoccommon:aoccommon",
     ],
 )

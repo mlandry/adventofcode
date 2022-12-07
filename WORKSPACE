@@ -1,12 +1,14 @@
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:maven_rules.bzl", "maven_jar")
+
 
 # Java Guava stuff.
 http_archive(
     name = "google_bazel_common",
-    sha256 = "a0d023e73fa01c93269445b13f2bdfc381e72e9527e06ae5411ab431ceb18d56",
-    strip_prefix = "bazel-common-b89cd874d40250d9bab356d40f6ffac8f7aa98f1",
-    urls = ["https://github.com/google/bazel-common/archive/b89cd874d40250d9bab356d40f6ffac8f7aa98f1.zip"],
+    sha256 = "005e5db64ef2f0562014fb4b7a86434bebac96c718d4eddcc1d89b563a5b2672",
+    strip_prefix = "bazel-common-04b7bf73dd927d687e8184565e83cf0a58e69a34",
+    urls = ["https://github.com/google/bazel-common/archive/04b7bf73dd927d687e8184565e83cf0a58e69a34.zip"],
 )
 
 load("@google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")

@@ -30,7 +30,7 @@ if language == "java":
     f.write(f"    srcs = [\"{classname}.java\"],\n")
     f.write(f"    resources = glob([\"*.txt\"]),\n")
     f.write(f"    deps = [\n")
-    f.write(f"      \"//src/main/java/aoccommon:aoccommon\",\n")
+    f.write(f"        \"//src/main/java/aoccommon:aoccommon\",\n")
     f.write(f"    ],\n")
     f.write(f")\n")
     f.close()

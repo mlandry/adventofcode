@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import aoccommon.InputHelper;
-import aoccommon.Range;
+import com.google.common.collect.Range;
 
 /** Solution for {@link https://adventofcode.com/2022/day/4}. */
 public class CampCleanup {
@@ -17,15 +17,15 @@ public class CampCleanup {
         .collect(Collectors.toList());
 
     long fullyContainedAssignmentPairs = assignments.stream()
-        .filter(assignment -> assignment.get(0).contains(assignment.get(1))
-            || assignment.get(1).contains(assignment.get(0)))
+        .filter(assignment -> assignment.get(0).encloses(assignment.get(1))
+            || assignment.get(1).encloses(assignment.get(0)))
         .count();
 
     System.out.println("Part 1: " + fullyContainedAssignmentPairs);
 
     long overlappingAssignmentPairs = assignments.stream()
-        .filter(assignment -> assignment.get(0).overlaps(assignment.get(1))
-            || assignment.get(1).overlaps(assignment.get(0)))
+        .filter(assignment -> assignment.get(0).isConnected(assignment.get(1))
+            || assignment.get(1).isConnected(assignment.get(0)))
         .count();
 
     System.out.println("Part 2: " + overlappingAssignmentPairs);

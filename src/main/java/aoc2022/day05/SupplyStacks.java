@@ -84,18 +84,8 @@ public class SupplyStacks {
         .collect(Collectors.joining());
   }
 
-  private static class Instruction {
-    private final int number;
-    private final int from;
-    private final int to;
-
-    Instruction(int number, int from, int to) {
-      this.number = number;
-      this.from = from;
-      this.to = to;
-    }
-
-    static Instruction parse(String line) {
+  private static record Instruction(int number, int from, int to) {
+    public static Instruction parse(String line) {
       Matcher matcher = INSTRUCTION_PATTERN.matcher(line);
       if (!matcher.matches()) {
         throw new IllegalArgumentException();

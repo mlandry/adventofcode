@@ -3,18 +3,7 @@ package aoccommon;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-public class Range<T extends Comparable<T>> {
-  private final T lower;
-  private final boolean lowerClosed;
-  private final T upper;
-  private final boolean upperClosed;
-
-  protected Range(T lower, boolean lowerClosed, T upper, boolean upperClosed) {
-    this.lower = lower;
-    this.lowerClosed = lowerClosed;
-    this.upper = upper;
-    this.upperClosed = upperClosed;
-  }
+public record Range<T extends Comparable<T>>(T lower, boolean lowerClosed, T upper, boolean upperClosed) {
 
   public static <T extends Comparable<T>> Range<T> of(T lower, T upper) {
     return new Range<>(lower, true, upper, false);
@@ -26,22 +15,6 @@ public class Range<T extends Comparable<T>> {
 
   public static <T extends Comparable<T>> Range<T> closed(T lower, T upper) {
     return new Range<>(lower, true, upper, true);
-  }
-
-  public T lower() {
-    return lower;
-  }
-
-  public boolean lowerClosed() {
-    return lowerClosed;
-  }
-
-  public T upper() {
-    return upper;
-  }
-
-  public boolean upperClosed() {
-    return upperClosed;
   }
 
   public boolean contains(T value) {
@@ -62,21 +35,6 @@ public class Range<T extends Comparable<T>> {
       throw new IllegalArgumentException("Can't check if range overlaps open range.");
     }
     return contains(other.lower()) || contains(other.upper());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(lower, lowerClosed, upper, upperClosed);
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (!(other instanceof Range)) {
-      return false;
-    }
-    Range<?> otherRange = (Range<?>) other;
-    return Objects.equals(lower, otherRange.lower) && lowerClosed == otherRange.lowerClosed
-        && Objects.equals(upper, otherRange.upper) && upperClosed == otherRange.upperClosed;
   }
 
   @Override

@@ -29,6 +29,19 @@ public record Point (int[] coordinates) {
   }
 
   @Override
+  public boolean equals(Object other) {
+    if (!(other instanceof Point)) {
+      return false;
+    }
+    return Arrays.equals(coordinates, ((Point) other).coordinates);
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(coordinates);
+  }
+
+  @Override
   public String toString() {
     return Arrays.toString(coordinates);
   }

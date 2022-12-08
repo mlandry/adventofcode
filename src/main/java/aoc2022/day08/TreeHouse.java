@@ -31,6 +31,8 @@ public class TreeHouse {
 
     VisibleTreeCounter counter = new VisibleTreeCounter(trees, Point.of(maxX, lines.size() - 1));
     System.out.println("Part 1: " + counter.countVisibleTrees());
+
+    System.out.println("Part 2: " + counter.getMaxScenicScore());
   }
 
   private static enum Direction {
@@ -64,6 +66,7 @@ public class TreeHouse {
       return trees.keySet().stream().filter(this::isVisible).count();
     }
 
+    // Part 1 entry point.
     private boolean isVisible(Point point) {
       if (isEdge(point)) {
         return true;
@@ -89,15 +92,51 @@ public class TreeHouse {
       return result;
     }
 
+    // Part 2 entry point.
+    private long getMaxScenicScore() {
+      return trees.keySet().stream()
+          .mapToLong(this::getScenicScore)
+          .max()
+          .getAsLong();
+    }
+
+    private long getScenicScore(Point point) {
+      // Brute-force?
+      return Arrays.stream(Direction.values())
+          .mapToLong(direction -> {
+            Point adjacent = getAdjacent(point, direction);
+            long count = 0;
+            while (adjacent != null) {
+              count++;
+              if (trees.get(adjacent) < trees.get(point)) {
+                adjacent = getAdjacent(adjacent, direction);
+              } else {
+                break;
+              }
+            }
+            return count;
+          })
+          .reduce((a, b) -> a * b)
+          .getAsLong();
+    }
+
     private boolean isEdge(Point point) {
       return point.getX() == 0
           || point.getY() == 0
           || point.getX() == maxPoint.getX()
           || point.getY() == maxPoint.getY();
     }
-  }
 
-  private static Point getAdjacent(Point point, Direction direction) {
-    return Point.of(point.getX() + direction.xd, point.getY() + direction.yd);
+    private Point getAdjacent(Point point, Direction direction) {
+      int newX = point.getX() + direction.xd;
+      int newY = point.getY() + direction.yd;
+      if (newX < 0 || newX > maxPoint.getX()) {
+        return null;
+      }
+      if (newY < 0 || newY > maxPoint.getY()) {
+        return null;
+      }
+      return Point.of(newX, newY);
+    }
   }
 }

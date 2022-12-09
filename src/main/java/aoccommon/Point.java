@@ -12,6 +12,10 @@ public record Point (int[] coordinates) {
     return new Point(Arrays.stream(csv.split(",")).mapToInt(Integer::parseInt).toArray());
   }
 
+  public Point copy() {
+    return new Point(Arrays.copyOf(coordinates(), coordinates().length));
+  }
+
   public int getX() {
     return getN(0);
   }

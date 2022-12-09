@@ -13,34 +13,42 @@ public class RopeBridge {
 
   private static final String INPUT = "aoc2022/day09/input.txt";
 
-  public static void main(String [] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     List<Motion> motions = InputHelper.linesFromResource(INPUT)
         .map(Motion::parse)
         .collect(Collectors.toList());
-    
+
+     System.out.println("Part 1: " + moveRope(motions, 2).size());
+     System.out.println("Part 1: " + moveRope(motions, 10).size());
+  }
+
+  private static Set<Point> moveRope(List<Motion> motions, int numKnots) {
     Set<Point> visited = new HashSet<>();
-    Point head = Point.of(0, 0);
-    Point tail = head.copy();
-    visited.add(tail);
+    Point[] knots = new Point[numKnots];
+    for (int k = 0; k < numKnots; k++) {
+      knots[k] = Point.of(0, 0);
+    }
+    visited.add(knots[0]);
 
     for (Motion motion : motions) {
       for (int i = 0; i < motion.count(); i++) {
-        head = move(head, motion.dir());
-        int xd = head.getX() - tail.getX();
-        int yd = head.getY() - tail.getY();
-        if (Math.abs(xd) <= 1 && Math.abs(yd) <= 1) {
-          // Head and Tail touching.
-          continue;
+        knots[0] = move(knots[0], motion.dir());
+        for (int k = 1; k < numKnots; k++) {
+          int xd = knots[k - 1].getX() - knots[k].getX();
+          int yd = knots[k - 1].getY() - knots[k].getY();
+          if (Math.abs(xd) <= 1 && Math.abs(yd) <= 1) {
+            // Head and Tail touching.
+            continue;
+          }
+          // Move in the direciton of Head.
+          int xmove = xd == 0 ? 0 : xd / Math.abs(xd);
+          int ymove = yd == 0 ? 0 : yd / Math.abs(yd);
+          knots[k] = Point.of(knots[k].getX() + xmove, knots[k].getY() + ymove);
         }
-        // Move in the direciton of Head.
-        int xmove = xd == 0 ? 0 : xd / Math.abs(xd);
-        int ymove = yd == 0 ? 0 : yd / Math.abs(yd);
-        tail = Point.of(tail.getX() + xmove, tail.getY() + ymove);
-        visited.add(tail);
+        visited.add(knots[numKnots - 1]);
       }
     }
-
-    System.out.println("Part 1: " + visited.size());
+    return visited;
   }
 
   private static enum Direction {
@@ -60,7 +68,7 @@ public class RopeBridge {
 
   private static record Motion(Direction dir, int count) {
     private static Motion parse(String line) {
-      String [] split = line.split(" ");
+      String[] split = line.split(" ");
       return new Motion(Direction.valueOf(split[0]), Integer.parseInt(split[1]));
     }
   }

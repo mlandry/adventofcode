@@ -8,37 +8,17 @@ import aoccommon.InputHelper;
 /** Solution for {@link https://adventofcode.com/2022/day/10}. */
 public class CathodeRayTube {
 
-  private static final String INPUT = "aoc2022/day10/input.txt";
+  private static final String INPUT = "aoc2022/day10/example.txt";
 
   public static void main(String[] args) throws Exception {
     List<Instruction> instructions = InputHelper.linesFromResource(INPUT)
         .map(Instruction::parse)
         .collect(Collectors.toList());
 
-    long cycle = 0;
-    long register = 1;
-    long signalSum = 0;
+    Computer computer = new Computer();
+    instructions.forEach(computer::execute);
 
-    for (Instruction instruction : instructions) {
-      switch (instruction.type) {
-        case NOOP:
-          if ((++cycle - 20) % 40 == 0) {
-            signalSum += (cycle * register);
-          }
-          break;
-        case ADDX:
-          if ((++cycle - 20) % 40 == 0) {
-            signalSum += (cycle * register);
-          }
-          if ((++cycle - 20) % 40 == 0) {
-            signalSum += (cycle * register);
-          }
-          register += instruction.value();
-          break;
-      }
-    }
-
-    System.out.println("Part 1: " + signalSum);
+    System.out.println("Part 1: " + computer.signalStrengthSum);
   }
 
   private enum Type {
@@ -61,5 +41,26 @@ public class CathodeRayTube {
     }
   }
 
-  private static class Computer
+  private static class Computer {
+    private long cycle = 0;
+    private long register = 0;
+    private long signalStrengthSum = 0;
+
+    private void execute(Instruction instruction) {
+      for (int c = 0; c < instruction.type.cycles; c++) {
+        incrementCycle();
+      }
+
+      if (instruction.type == Type.ADDX) {
+        register += instruction.value;
+      }
+    }
+
+    private void incrementCycle() {
+      if ((++cycle - 20) % 40 == 0) {
+        System.out.println(String.format("cycle=%s, register=%s, signalStrength=%s", cycle, register, (cycle * register)));
+        signalStrengthSum += (cycle * register);
+      }
+    }
+  }
 }

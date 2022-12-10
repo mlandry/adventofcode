@@ -8,7 +8,7 @@ import aoccommon.InputHelper;
 /** Solution for {@link https://adventofcode.com/2022/day/10}. */
 public class CathodeRayTube {
 
-  private static final String INPUT = "aoc2022/day10/example.txt";
+  private static final String INPUT = "aoc2022/day10/input.txt";
 
   public static void main(String[] args) throws Exception {
     List<Instruction> instructions = InputHelper.linesFromResource(INPUT)
@@ -43,7 +43,7 @@ public class CathodeRayTube {
 
   private static class Computer {
     private long cycle = 0;
-    private long register = 0;
+    private long register = 1;
     private long signalStrengthSum = 0;
 
     private void execute(Instruction instruction) {
@@ -58,7 +58,6 @@ public class CathodeRayTube {
 
     private void incrementCycle() {
       if ((++cycle - 20) % 40 == 0) {
-        System.out.println(String.format("cycle=%s, register=%s, signalStrength=%s", cycle, register, (cycle * register)));
         signalStrengthSum += (cycle * register);
       }
     }

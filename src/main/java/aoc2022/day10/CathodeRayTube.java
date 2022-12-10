@@ -1,7 +1,6 @@
 package aoc2022.day10;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import aoccommon.InputHelper;
@@ -12,16 +11,15 @@ public class CathodeRayTube {
   private static final String INPUT = "aoc2022/day10/input.txt";
 
   public static void main(String[] args) throws Exception {
-    Queue<Instruction> queue = InputHelper.linesFromResource(INPUT)
+    List<Instruction> instructions = InputHelper.linesFromResource(INPUT)
         .map(Instruction::parse)
-        .collect(Collectors.toCollection(LinkedList::new));
+        .collect(Collectors.toList());
 
     long cycle = 0;
     long register = 1;
     long signalSum = 0;
-    Instruction instruction = null;
 
-    while ((instruction = queue.poll()) != null) {
+    for (Instruction instruction : instructions) {
       switch (instruction.type) {
         case NOOP:
           if ((++cycle - 20) % 40 == 0) {
@@ -62,4 +60,6 @@ public class CathodeRayTube {
         split.length == 2 ? Integer.parseInt(split[1]) : -1);
     }
   }
+
+  private static class Computer
 }

@@ -19,6 +19,7 @@ public class CathodeRayTube {
     instructions.forEach(computer::execute);
 
     System.out.println("Part 1: " + computer.signalStrengthSum);
+    System.out.println("Part 2:\n" + computer.crt.toString());
   }
 
   private enum Type {
@@ -46,16 +47,27 @@ public class CathodeRayTube {
     private long register = 1;
     private long signalStrengthSum = 0;
 
+    StringBuilder crt = new StringBuilder();
+
     private void execute(Instruction instruction) {
       for (int c = 0; c < instruction.type.cycles; c++) {
-        incrementCycle();
+        runCycle();
       }
       register += instruction.value;
     }
 
-    private void incrementCycle() {
+    private void runCycle() {
+      int crtx = (int) cycle % 40;
       if ((++cycle - 20) % 40 == 0) {
         signalStrengthSum += (cycle * register);
+      }
+      if (register == crtx || register - 1 == crtx || register + 1 == crtx) {
+        crt.append('#');
+      } else {
+        crt.append('.');
+      }
+      if (crtx == 39) {
+        crt.append('\n');
       }
     }
   }

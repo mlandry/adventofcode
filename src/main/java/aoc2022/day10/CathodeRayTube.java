@@ -43,6 +43,8 @@ public class CathodeRayTube {
   }
 
   private static class Computer {
+    private static final int CRT_WIDTH = 40;
+
     private long cycle = 0;
     private long register = 1;
     private long signalStrengthSum = 0;
@@ -57,16 +59,21 @@ public class CathodeRayTube {
     }
 
     private void runCycle() {
-      int crtx = (int) cycle % 40;
+      // CRT position is zero-indexed, 40 characters wide.
+      int crtx = (int) cycle % CRT_WIDTH;
+
+      // Signal strength is updated at 20, 60, 100, 140, etc.
       if ((++cycle - 20) % 40 == 0) {
         signalStrengthSum += (cycle * register);
       }
-      if (register == crtx || register - 1 == crtx || register + 1 == crtx) {
+
+      // Sprite is 3 characters wide with register pointing to the middle.
+      if (Math.abs(crtx - register) <= 1) {
         crt.append('#');
       } else {
         crt.append('.');
       }
-      if (crtx == 39) {
+      if (crtx == CRT_WIDTH - 1) {
         crt.append('\n');
       }
     }

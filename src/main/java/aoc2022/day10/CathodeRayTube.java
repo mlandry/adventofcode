@@ -37,7 +37,7 @@ public class CathodeRayTube {
       String[] split = line.split(" ");
       return new Instruction(
         Type.valueOf(split[0].toUpperCase()),
-        split.length == 2 ? Integer.parseInt(split[1]) : -1);
+        split.length == 2 ? Integer.parseInt(split[1]) : 0);
     }
   }
 
@@ -50,10 +50,7 @@ public class CathodeRayTube {
       for (int c = 0; c < instruction.type.cycles; c++) {
         incrementCycle();
       }
-
-      if (instruction.type == Type.ADDX) {
-        register += instruction.value;
-      }
+      register += instruction.value;
     }
 
     private void incrementCycle() {

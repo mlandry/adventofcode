@@ -1,5 +1,6 @@
 package aoc2022.day11;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -8,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,9 +19,9 @@ import aoccommon.InputHelper;
 /** Solution for {@link https://adventofcode.com/2022/day/11}. */
 public class MonkeyInTheMiddle {
 
-  private static final String INPUT = "aoc2022/day11/example.txt";
+  private static final String INPUT = "aoc2022/day11/input.txt";
 
-  private static final boolean DEBUG = true;
+  private static final boolean DEBUG = false;
   private static void debug(String fmt, Object... args) {
     if (DEBUG) {
       System.out.println(String.format(fmt, args));
@@ -42,9 +44,7 @@ public class MonkeyInTheMiddle {
     // Part 1.
     Monkey.reset();
     for (int i = 0; i < 20; i++) {
-      monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry / 3));
-      debug("Items after round %d: %s", i, Monkey.ITEMS);
-      debug("Inspection count after round %d: %s", i, Monkey.INSPECTION_COUNT);
+      monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry.divide(BigInteger.valueOf(3))));
     }
 
     long monkeyBusiness = Monkey.INSPECTION_COUNT.values().stream()
@@ -59,9 +59,6 @@ public class MonkeyInTheMiddle {
     Monkey.reset();
     for (int i = 0; i < 10000; i++) {
       monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry));
-      debug("Items after round %d: %s", i, Monkey.ITEMS);
-      debug("Inspection count after round %d: %s", i, Monkey.INSPECTION_COUNT);
-      System.in.read();
     }
 
     System.out.println(Monkey.INSPECTION_COUNT);
@@ -77,8 +74,8 @@ public class MonkeyInTheMiddle {
   private static record Monkey(int id, Operation operation, Test test, Condition trueCondition,
       Condition falseCondition) {
 
-    private static final Map<Integer, LinkedList<Long>> STARTING_ITEMS = new HashMap<>();
-    private static final Map<Integer, LinkedList<Long>> ITEMS = new HashMap<>();
+    private static final Map<Integer, LinkedList<BigInteger>> STARTING_ITEMS = new HashMap<>();
+    private static final Map<Integer, LinkedList<BigInteger>> ITEMS = new HashMap<>();
     private static final Map<Integer, Integer> INSPECTION_COUNT = new HashMap<>();
 
     // Monkey 3:
@@ -95,13 +92,13 @@ public class MonkeyInTheMiddle {
       }
       int id = Integer.parseInt(m.group(1));
 
-      LinkedList<Long> items = new LinkedList<>();
+      LinkedList<BigInteger> items = new LinkedList<>();
       line = iterator.next();
       m = STARTING_ITEMS_PATTERN.matcher(line);
       if (!m.matches()) {
         throw new IllegalArgumentException(line);
       }
-      Arrays.stream(m.group(1).split(", ")).map(Long::parseLong).forEach(items::add);
+      Arrays.stream(m.group(1).split(", ")).map(BigInteger::new).forEach(items::add);
 
       STARTING_ITEMS.put(id, items);
 
@@ -116,17 +113,17 @@ public class MonkeyInTheMiddle {
     private static void reset() {
       INSPECTION_COUNT.clear();
       ITEMS.clear();
-      for (Map.Entry<Integer, LinkedList<Long>> entry : STARTING_ITEMS.entrySet()) {
+      for (Map.Entry<Integer, LinkedList<BigInteger>> entry : STARTING_ITEMS.entrySet()) {
         ITEMS.put(entry.getKey(), new LinkedList<>(entry.getValue()));
       }
     }
 
-    private void takeTurn(Function<Long, Long> worryReducer) {
+    private void takeTurn(Function<BigInteger, BigInteger> worryReducer) {
       debug("Monkey %d:", id);
-      Iterator<Long> iterator = ITEMS.get(id).iterator();
+      Iterator<BigInteger> iterator = ITEMS.get(id).iterator();
       while (iterator.hasNext()) {
         INSPECTION_COUNT.compute(id, (id, old) -> old == null ? 1 : old + 1);
-        long worryLevel = iterator.next();
+        BigInteger worryLevel = iterator.next();
         debug("  Monkey inspects an item with a worry level of %d.", worryLevel);
         worryLevel = operation.apply(worryLevel);
         debug("    Worry level is increased to %d.", worryLevel);
@@ -147,7 +144,7 @@ public class MonkeyInTheMiddle {
     }
   }
 
-  private static record Operation(String left, char op, String right) {
+  private static record Operation(Optional<BigInteger> left, char op, Optional<BigInteger> right) {
 
     // Operation: new = old * 19
     // Operation: new = old + 6
@@ -160,23 +157,28 @@ public class MonkeyInTheMiddle {
       if (!m.matches()) {
         throw new IllegalArgumentException(line);
       }
-      return new Operation(m.group(1), m.group(2).charAt(0), m.group(3));
+      String left = m.group(1);
+      String right = m.group(3);
+      return new Operation(
+        left.equals("old") ? Optional.empty() : Optional.of(new BigInteger(left)),
+        m.group(2).charAt(0),
+        right.equals("old") ? Optional.empty() : Optional.of(new BigInteger(right)));
     }
 
-    private long apply(long old) {
-      long eqLeft = left.equals("old") ? old : Long.parseLong(left);
-      long eqRight = right.equals("old") ? old : Long.parseLong(right);
+    private BigInteger apply(BigInteger old) {
+      BigInteger eqLeft = left.orElse(old);
+      BigInteger eqRight = right.orElse(old);
       if (op == '+') {
-        return eqLeft + eqRight;
+        return eqLeft.add(eqRight);
       } else if (op == '*') {
-        return eqLeft * eqRight;
+        return eqLeft.multiply(eqRight);
       } else {
         throw new UnsupportedOperationException();
       }
     }
   }
 
-  private static record Test(long divisibleBy) {
+  private static record Test(BigInteger divisibleBy) {
 
     // Test: divisible by 23
     private static final Pattern PATTERN = Pattern.compile("^\\ *Test:\\ divisible\\ by\\ (\\d+)$");
@@ -186,11 +188,11 @@ public class MonkeyInTheMiddle {
       if (!m.matches()) {
         throw new IllegalArgumentException(line);
       }
-      return new Test(Integer.parseInt(m.group(1)));
+      return new Test(new BigInteger(m.group(1)));
     }
 
-    private boolean apply(long input) {
-      return (input % divisibleBy) == 0;
+    private boolean apply(BigInteger input) {
+      return input.mod(divisibleBy).intValue() == 0;
     }
   }
 

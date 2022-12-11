@@ -62,13 +62,13 @@ public class MonkeyInTheMiddle {
     for (int i = 0; i < 10000; i++) {
       monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry.mod(reducer)));
     }
-
     System.out.println("Part 2: " + Monkey.getMonkeyBusiness());
   }
 
   private static record Monkey(int id, Operation operation, Test test, Condition trueCondition,
       Condition falseCondition) {
 
+    // Keep the mutable state outside of Monkey record.
     private static final Map<Integer, LinkedList<BigInteger>> STARTING_ITEMS = new HashMap<>();
     private static final Map<Integer, LinkedList<BigInteger>> ITEMS = new HashMap<>();
     private static final Map<Integer, Integer> INSPECTION_COUNT = new HashMap<>();

@@ -1,10 +1,14 @@
 package aoc2022.day11;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import aoccommon.InputHelper;
 
 /** Solution for {@link https://adventofcode.com/2022/day/11}. */
 public class MonkeyInTheMiddle {
@@ -12,6 +16,16 @@ public class MonkeyInTheMiddle {
   private static final String INPUT = "aoc2022/day11/input.txt";
 
   public static void main(String[] args) throws Exception {
+    Iterator<String> input = InputHelper.linesFromResource(INPUT).iterator();
+    List<Monkey> monkeys = new ArrayList<>();
+    while (input.hasNext()) {
+      monkeys.add(Monkey.parse(input));
+      if (input.hasNext()) {
+        input.next();
+      }
+    }
+
+    // System.out.println(monkeys);
   }
 
   private static record Monkey(int id, LinkedList<Integer> items, Operation operation, Test test,
@@ -23,16 +37,18 @@ public class MonkeyInTheMiddle {
     private static final Pattern STARTING_ITEMS_PATTERN = Pattern.compile("^\\ *Starting\\ items:\\ (.+)$");
 
     private static Monkey parse(Iterator<String> iterator) {
-      Matcher m = ID_PATTERN.matcher(iterator.next());
+      String line = iterator.next();
+      Matcher m = ID_PATTERN.matcher(line);
       if (!m.matches()) {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException(line);
       }
       int id = Integer.parseInt(m.group(1));
 
       LinkedList<Integer> items = new LinkedList<>();
-      m = STARTING_ITEMS_PATTERN.matcher(iterator.next());
+      line = iterator.next();
+      m = STARTING_ITEMS_PATTERN.matcher(line);
       if (!m.matches()) {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException(line);
       }
       Arrays.stream(m.group(1).split(", ")).map(Integer::parseInt).forEach(items::add);
 
@@ -57,7 +73,7 @@ public class MonkeyInTheMiddle {
     private static Operation parse(String line) {
       Matcher m = PATTERN.matcher(line);
       if (!m.matches()) {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException(line);
       }
       return new Operation(m.group(1), m.group(2).charAt(0), m.group(3));
     }
@@ -78,12 +94,12 @@ public class MonkeyInTheMiddle {
   private static record Test(int divisibleBy) {
 
     // Test: divisible by 23
-    private static final Pattern PATTERN = Pattern.compile("^\\ *Test:\\ divisble by (\\d+)$");
+    private static final Pattern PATTERN = Pattern.compile("^\\ *Test:\\ divisible\\ by\\ (\\d+)$");
 
     private static Test parse(String line) {
       Matcher m = PATTERN.matcher(line);
       if (!m.matches()) {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException(line);
       }
       return new Test(Integer.parseInt(m.group(1)));
     }
@@ -102,9 +118,9 @@ public class MonkeyInTheMiddle {
     private static Condition parse(String line) {
       Matcher m = PATTERN.matcher(line);
       if (!m.matches()) {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException(line);
       }
-      return new Condition(Boolean.getBoolean(m.group(1)), Integer.parseInt(m.group(2));
+      return new Condition(Boolean.parseBoolean(m.group(1)), Integer.parseInt(m.group(2)));
     }
   }
 }

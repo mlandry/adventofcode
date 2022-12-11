@@ -62,7 +62,7 @@ public class MonkeyInTheMiddle {
       monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry.mod(reducer)));
     }
 
-    System.out.println("Part 1: " + Monkey.getMonkeyBusiness());
+    System.out.println("Part 2: " + Monkey.getMonkeyBusiness());
   }
 
   private static record Monkey(int id, Operation operation, Test test, Condition trueCondition,

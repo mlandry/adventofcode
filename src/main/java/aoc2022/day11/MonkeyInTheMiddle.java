@@ -2,6 +2,7 @@ package aoc2022.day11;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -15,7 +16,14 @@ import aoccommon.InputHelper;
 /** Solution for {@link https://adventofcode.com/2022/day/11}. */
 public class MonkeyInTheMiddle {
 
-  private static final String INPUT = "aoc2022/day11/input.txt";
+  private static final String INPUT = "aoc2022/day11/example.txt";
+
+  private static final boolean DEBUG = false;
+  private static void debug(String fmt, Object... args) {
+    if (DEBUG) {
+      System.out.println(String.format(fmt, args));
+    }
+  }
 
   public static void main(String[] args) throws Exception {
     Iterator<String> input = InputHelper.linesFromResource(INPUT).iterator();
@@ -27,18 +35,27 @@ public class MonkeyInTheMiddle {
       }
     }
 
-    // System.out.println(monkeys);
-    // System.out.println(Monkey.ITEMS);
+    debug("Parsed monkeys: %s", monkeys);
+    debug("Starting items: %s", Monkey.ITEMS);
 
     for (int i = 0; i < 20; i++) {
       monkeys.forEach(monkey -> monkey.takeTurn());
-      System.out.println(Monkey.ITEMS);
-      System.out.println(Monkey.INSPECTION_COUNT);
-      System.in.read();
+      debug("Items after round %d: %s", i, Monkey.ITEMS);
+      debug("Inspection count after round %d: %s", i, Monkey.INSPECTION_COUNT);
     }
+
+    long monkeyBusiness = Monkey.INSPECTION_COUNT.values().stream()
+        .sorted(Comparator.reverseOrder())
+        .limit(2)
+        .mapToLong(Integer::longValue)
+        .reduce((a, b) -> a * b)
+        .get();
+    System.out.println("Part 1: " + monkeyBusiness);
   }
 
-  private static record Monkey(int id, Operation operation, Test test, Condition trueCondition, Condition falseCondition) {   
+  private static record Monkey(int id, Operation operation, Test test, Condition trueCondition,
+      Condition falseCondition) {
+
     private static final Map<Integer, LinkedList<Long>> ITEMS = new HashMap<>();
     private static final Map<Integer, Integer> INSPECTION_COUNT = new HashMap<>();
 
@@ -75,21 +92,27 @@ public class MonkeyInTheMiddle {
     }
 
     private void takeTurn() {
+      debug("Monkey %d:", id);
       Iterator<Long> iterator = ITEMS.get(id).iterator();
       while (iterator.hasNext()) {
         INSPECTION_COUNT.compute(id, (id, old) -> old == null ? 1 : old + 1);
         long worryLevel = iterator.next();
-        // Worry level is increased by operation.
+        debug("  Monkey inspects an item with a worry level of %d.", worryLevel);
         worryLevel = operation.apply(worryLevel);
-        // Monkey gets bored with item. Worry level is divided by 3.
+        debug("    Worry level is increased to %d.", worryLevel);
         worryLevel = worryLevel / 3;
-        // Test worry level and find the monkey to throw it to.
+        debug("    Monkey gets bored with item. Worry level is divded by 3 to %d.", worryLevel);
         boolean result = test.apply(worryLevel);
         if (result) {
+          debug("    Current worry level is divisible by %d.", test.divisibleBy());
+          debug("    Item with worry level %d is thrown to monkey %d.", worryLevel, trueCondition.monkeyToThrowTo());
           ITEMS.get(trueCondition.monkeyToThrowTo()).add(worryLevel);
         } else {
+          debug("    Current worry level is not divisible by %d.", test.divisibleBy());
+          debug("    Item with worry level %d is thrown to monkey %d.", worryLevel, falseCondition.monkeyToThrowTo());
           ITEMS.get(falseCondition.monkeyToThrowTo()).add(worryLevel);
         }
+        iterator.remove();
       }
     }
   }

@@ -16,7 +16,7 @@ import aoccommon.InputHelper;
 /** Solution for {@link https://adventofcode.com/2022/day/11}. */
 public class MonkeyInTheMiddle {
 
-  private static final String INPUT = "aoc2022/day11/example.txt";
+  private static final String INPUT = "aoc2022/day11/input.txt";
 
   private static final boolean DEBUG = false;
   private static void debug(String fmt, Object... args) {
@@ -49,7 +49,7 @@ public class MonkeyInTheMiddle {
         .limit(2)
         .mapToLong(Integer::longValue)
         .reduce((a, b) -> a * b)
-        .get();
+        .getAsLong();
     System.out.println("Part 1: " + monkeyBusiness);
   }
 

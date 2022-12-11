@@ -53,12 +53,11 @@ public class MonkeyInTheMiddle {
     Monkey.reset();
     // Use a ~LCM for all the test divisors to keep the worry from exploding while maintaing properties.
     // (Or just multiply them all together I guess.)
-    BigInteger reducer = BigInteger.valueOf(monkeys.stream()
+    BigInteger reducer = monkeys.stream()
         .map(Monkey::test)
         .map(Test::divisibleBy)
-        .mapToLong(BigInteger::longValue)
-        .reduce((a, b) -> a * b)
-        .getAsLong());
+        .reduce((a, b) -> a.multiply(b))
+        .get();
 
     for (int i = 0; i < 10000; i++) {
       monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry.mod(reducer)));

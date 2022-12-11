@@ -22,6 +22,7 @@ public class MonkeyInTheMiddle {
   private static final String INPUT = "aoc2022/day11/input.txt";
 
   private static final boolean DEBUG = false;
+
   private static void debug(String fmt, Object... args) {
     if (DEBUG) {
       System.out.println(String.format(fmt, args));
@@ -46,29 +47,22 @@ public class MonkeyInTheMiddle {
     for (int i = 0; i < 20; i++) {
       monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry.divide(BigInteger.valueOf(3))));
     }
-
-    long monkeyBusiness = Monkey.INSPECTION_COUNT.values().stream()
-        .sorted(Comparator.reverseOrder())
-        .limit(2)
-        .mapToLong(Integer::longValue)
-        .reduce((a, b) -> a * b)
-        .getAsLong();
-    System.out.println("Part 1: " + monkeyBusiness);
+    System.out.println("Part 1: " + Monkey.getMonkeyBusiness());
 
     // Part 2.
     Monkey.reset();
+    BigInteger reducer = BigInteger.valueOf(monkeys.stream()
+        .map(Monkey::test)
+        .map(Test::divisibleBy)
+        .mapToLong(BigInteger::longValue)
+        .reduce((a, b) -> a * b)
+        .getAsLong());
+
     for (int i = 0; i < 10000; i++) {
-      monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry));
+      monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry.mod(reducer)));
     }
 
-    System.out.println(Monkey.INSPECTION_COUNT);
-    monkeyBusiness = Monkey.INSPECTION_COUNT.values().stream()
-        .sorted(Comparator.reverseOrder())
-        .limit(2)
-        .mapToLong(Integer::longValue)
-        .reduce((a, b) -> a * b)
-        .getAsLong();
-    System.out.println("Part 1: " + monkeyBusiness);
+    System.out.println("Part 1: " + Monkey.getMonkeyBusiness());
   }
 
   private static record Monkey(int id, Operation operation, Test test, Condition trueCondition,
@@ -118,6 +112,15 @@ public class MonkeyInTheMiddle {
       }
     }
 
+    private static long getMonkeyBusiness() {
+      return Monkey.INSPECTION_COUNT.values().stream()
+          .sorted(Comparator.reverseOrder())
+          .limit(2)
+          .mapToLong(Integer::longValue)
+          .reduce((a, b) -> a * b)
+          .getAsLong();
+    }
+
     private void takeTurn(Function<BigInteger, BigInteger> worryReducer) {
       debug("Monkey %d:", id);
       Iterator<BigInteger> iterator = ITEMS.get(id).iterator();
@@ -160,9 +163,9 @@ public class MonkeyInTheMiddle {
       String left = m.group(1);
       String right = m.group(3);
       return new Operation(
-        left.equals("old") ? Optional.empty() : Optional.of(new BigInteger(left)),
-        m.group(2).charAt(0),
-        right.equals("old") ? Optional.empty() : Optional.of(new BigInteger(right)));
+          left.equals("old") ? Optional.empty() : Optional.of(new BigInteger(left)),
+          m.group(2).charAt(0),
+          right.equals("old") ? Optional.empty() : Optional.of(new BigInteger(right)));
     }
 
     private BigInteger apply(BigInteger old) {

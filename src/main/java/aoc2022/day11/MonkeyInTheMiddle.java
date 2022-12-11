@@ -51,6 +51,8 @@ public class MonkeyInTheMiddle {
 
     // Part 2.
     Monkey.reset();
+    // Use a ~LCM for all the test divisors to keep the worry from exploding while maintaing properties.
+    // (Or just multiply them all together I guess.)
     BigInteger reducer = BigInteger.valueOf(monkeys.stream()
         .map(Monkey::test)
         .map(Test::divisibleBy)

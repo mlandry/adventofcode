@@ -2,9 +2,12 @@ package aoc2022.day11;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,11 +29,15 @@ public class MonkeyInTheMiddle {
     }
 
     // System.out.println(monkeys);
+    // System.out.println(Monkey.ITEMS);
+
   }
 
-  private static record Monkey(int id, LinkedList<Integer> items, Operation operation, Test test,
-      Condition trueCondition, Condition falseCondition) {
+  private static record Monkey(int id, Operation operation, Test test, Condition trueCondition, Condition falseCondition) {   
+    private static final Map<Integer, LinkedList<Integer>> ITEMS = new HashMap<>();
+    private static final Map<Integer, AtomicInteger> INSPECTION_COUNT = new HashMap<>();
 
+    // Monkey 3:
     private static final Pattern ID_PATTERN = Pattern.compile("^Monkey\\ (\\d+):$");
 
     // Starting items: 54, 65, 75, 74
@@ -52,13 +59,21 @@ public class MonkeyInTheMiddle {
       }
       Arrays.stream(m.group(1).split(", ")).map(Integer::parseInt).forEach(items::add);
 
+      ITEMS.put(id, items);
+
       return new Monkey(
           id,
-          items,
           Operation.parse(iterator.next()),
           Test.parse(iterator.next()),
           Condition.parse(iterator.next()),
           Condition.parse(iterator.next()));
+    }
+
+    private void takeTurn() {
+      Iterator<Integer> iterator = ITEMS.get(id).iterator();
+      while (iterator.hasNext()) {
+        int item = iterator.next();
+      }
     }
   }
 

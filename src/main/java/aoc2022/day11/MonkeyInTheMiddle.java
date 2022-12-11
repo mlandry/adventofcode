@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,9 +17,9 @@ import aoccommon.InputHelper;
 /** Solution for {@link https://adventofcode.com/2022/day/11}. */
 public class MonkeyInTheMiddle {
 
-  private static final String INPUT = "aoc2022/day11/input.txt";
+  private static final String INPUT = "aoc2022/day11/example.txt";
 
-  private static final boolean DEBUG = false;
+  private static final boolean DEBUG = true;
   private static void debug(String fmt, Object... args) {
     if (DEBUG) {
       System.out.println(String.format(fmt, args));
@@ -38,8 +39,10 @@ public class MonkeyInTheMiddle {
     debug("Parsed monkeys: %s", monkeys);
     debug("Starting items: %s", Monkey.ITEMS);
 
+    // Part 1.
+    Monkey.reset();
     for (int i = 0; i < 20; i++) {
-      monkeys.forEach(monkey -> monkey.takeTurn());
+      monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry / 3));
       debug("Items after round %d: %s", i, Monkey.ITEMS);
       debug("Inspection count after round %d: %s", i, Monkey.INSPECTION_COUNT);
     }
@@ -51,11 +54,30 @@ public class MonkeyInTheMiddle {
         .reduce((a, b) -> a * b)
         .getAsLong();
     System.out.println("Part 1: " + monkeyBusiness);
+
+    // Part 2.
+    Monkey.reset();
+    for (int i = 0; i < 10000; i++) {
+      monkeys.forEach(monkey -> monkey.takeTurn(worry -> worry));
+      debug("Items after round %d: %s", i, Monkey.ITEMS);
+      debug("Inspection count after round %d: %s", i, Monkey.INSPECTION_COUNT);
+      System.in.read();
+    }
+
+    System.out.println(Monkey.INSPECTION_COUNT);
+    monkeyBusiness = Monkey.INSPECTION_COUNT.values().stream()
+        .sorted(Comparator.reverseOrder())
+        .limit(2)
+        .mapToLong(Integer::longValue)
+        .reduce((a, b) -> a * b)
+        .getAsLong();
+    System.out.println("Part 1: " + monkeyBusiness);
   }
 
   private static record Monkey(int id, Operation operation, Test test, Condition trueCondition,
       Condition falseCondition) {
 
+    private static final Map<Integer, LinkedList<Long>> STARTING_ITEMS = new HashMap<>();
     private static final Map<Integer, LinkedList<Long>> ITEMS = new HashMap<>();
     private static final Map<Integer, Integer> INSPECTION_COUNT = new HashMap<>();
 
@@ -81,7 +103,7 @@ public class MonkeyInTheMiddle {
       }
       Arrays.stream(m.group(1).split(", ")).map(Long::parseLong).forEach(items::add);
 
-      ITEMS.put(id, items);
+      STARTING_ITEMS.put(id, items);
 
       return new Monkey(
           id,
@@ -91,7 +113,15 @@ public class MonkeyInTheMiddle {
           Condition.parse(iterator.next()));
     }
 
-    private void takeTurn() {
+    private static void reset() {
+      INSPECTION_COUNT.clear();
+      ITEMS.clear();
+      for (Map.Entry<Integer, LinkedList<Long>> entry : STARTING_ITEMS.entrySet()) {
+        ITEMS.put(entry.getKey(), new LinkedList<>(entry.getValue()));
+      }
+    }
+
+    private void takeTurn(Function<Long, Long> worryReducer) {
       debug("Monkey %d:", id);
       Iterator<Long> iterator = ITEMS.get(id).iterator();
       while (iterator.hasNext()) {
@@ -100,7 +130,7 @@ public class MonkeyInTheMiddle {
         debug("  Monkey inspects an item with a worry level of %d.", worryLevel);
         worryLevel = operation.apply(worryLevel);
         debug("    Worry level is increased to %d.", worryLevel);
-        worryLevel = worryLevel / 3;
+        worryLevel = worryReducer.apply(worryLevel);
         debug("    Monkey gets bored with item. Worry level is divded by 3 to %d.", worryLevel);
         boolean result = test.apply(worryLevel);
         if (result) {
@@ -146,7 +176,7 @@ public class MonkeyInTheMiddle {
     }
   }
 
-  private static record Test(int divisibleBy) {
+  private static record Test(long divisibleBy) {
 
     // Test: divisible by 23
     private static final Pattern PATTERN = Pattern.compile("^\\ *Test:\\ divisible\\ by\\ (\\d+)$");

@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,11 +30,17 @@ public class MonkeyInTheMiddle {
     // System.out.println(monkeys);
     // System.out.println(Monkey.ITEMS);
 
+    for (int i = 0; i < 20; i++) {
+      monkeys.forEach(monkey -> monkey.takeTurn());
+      System.out.println(Monkey.ITEMS);
+      System.out.println(Monkey.INSPECTION_COUNT);
+      System.in.read();
+    }
   }
 
   private static record Monkey(int id, Operation operation, Test test, Condition trueCondition, Condition falseCondition) {   
-    private static final Map<Integer, LinkedList<Integer>> ITEMS = new HashMap<>();
-    private static final Map<Integer, AtomicInteger> INSPECTION_COUNT = new HashMap<>();
+    private static final Map<Integer, LinkedList<Long>> ITEMS = new HashMap<>();
+    private static final Map<Integer, Integer> INSPECTION_COUNT = new HashMap<>();
 
     // Monkey 3:
     private static final Pattern ID_PATTERN = Pattern.compile("^Monkey\\ (\\d+):$");
@@ -51,13 +56,13 @@ public class MonkeyInTheMiddle {
       }
       int id = Integer.parseInt(m.group(1));
 
-      LinkedList<Integer> items = new LinkedList<>();
+      LinkedList<Long> items = new LinkedList<>();
       line = iterator.next();
       m = STARTING_ITEMS_PATTERN.matcher(line);
       if (!m.matches()) {
         throw new IllegalArgumentException(line);
       }
-      Arrays.stream(m.group(1).split(", ")).map(Integer::parseInt).forEach(items::add);
+      Arrays.stream(m.group(1).split(", ")).map(Long::parseLong).forEach(items::add);
 
       ITEMS.put(id, items);
 
@@ -70,9 +75,21 @@ public class MonkeyInTheMiddle {
     }
 
     private void takeTurn() {
-      Iterator<Integer> iterator = ITEMS.get(id).iterator();
+      Iterator<Long> iterator = ITEMS.get(id).iterator();
       while (iterator.hasNext()) {
-        int item = iterator.next();
+        INSPECTION_COUNT.compute(id, (id, old) -> old == null ? 1 : old + 1);
+        long worryLevel = iterator.next();
+        // Worry level is increased by operation.
+        worryLevel = operation.apply(worryLevel);
+        // Monkey gets bored with item. Worry level is divided by 3.
+        worryLevel = worryLevel / 3;
+        // Test worry level and find the monkey to throw it to.
+        boolean result = test.apply(worryLevel);
+        if (result) {
+          ITEMS.get(trueCondition.monkeyToThrowTo()).add(worryLevel);
+        } else {
+          ITEMS.get(falseCondition.monkeyToThrowTo()).add(worryLevel);
+        }
       }
     }
   }

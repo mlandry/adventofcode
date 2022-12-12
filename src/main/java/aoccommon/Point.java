@@ -2,7 +2,7 @@ package aoccommon;
 
 import java.util.Arrays;
 
-public class Point {
+public final class Point {
 
   private final int[] coordinates;
 

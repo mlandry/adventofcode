@@ -11,7 +11,7 @@ public class WrappingPaper {
 
   private static final String INPUT = "aoc2015/day02/input.txt";
 
-  public static void main(String [] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     List<int[]> boxes = InputHelper.linesFromResource(INPUT)
         .map(s -> s.split("x"))
         .map(sp -> Arrays.stream(sp).mapToInt(Integer::parseInt).toArray())
@@ -26,5 +26,16 @@ public class WrappingPaper {
         })
         .sum();
     System.out.println("Part 1: " + wrappingPaperNeeded);
+
+    long ribbonNeeded = boxes.stream()
+        .mapToLong(box -> {
+          int perimeter1 = 2 * (box[0] + box[1]);
+          int perimeter2 = 2 * (box[0] + box[2]);
+          int perimeter3 = 2 * (box[1] + box[2]);
+          int bow = Arrays.stream(box).reduce(1, (a, b) -> a * b);
+          return bow + Math.min(perimeter1, Math.min(perimeter2, perimeter3));
+        })
+        .sum();
+    System.out.println("Part 2: " + ribbonNeeded);
   }
 }

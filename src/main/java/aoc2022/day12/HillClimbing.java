@@ -1,5 +1,6 @@
 package aoc2022.day12;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -17,10 +18,37 @@ public class HillClimbing {
 
   private static final String INPUT = "aoc2022/day12/input.txt";
 
-  public static void main(String [] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     List<String> input = InputHelper.linesFromResource(INPUT).collect(Collectors.toList());
-    Climber climber = Climber.create(input);
+    Point start = null, end = null;
+    int maxX = -1;
+    List<Point> allPossibleStarts = new ArrayList<>();
+
+    for (int y = 0; y < input.size(); y++) {
+      for (int x = 0; x < input.get(y).length(); x++) {
+        char c = input.get(y).charAt(x);
+        if (c == 'S') {
+          start = Point.of(x, y);
+          allPossibleStarts.add(start);
+        } else if (c == 'E') {
+          end = Point.of(x, y);
+        } else if (c == 'a') {
+          allPossibleStarts.add(Point.of(x, y));
+        }
+      }
+      maxX = input.get(y).length() - 1; // Assume all rows same length.
+    }
+    Point maxPoint = Point.of(maxX, input.size() - 1);
+
+    Climber climber = new Climber(input, start, end, maxPoint);
     System.out.println("Part 1: " + climber.traverse());
+
+    int shortestPath = Integer.MAX_VALUE;
+    for (Point possibleStart : allPossibleStarts) {
+      climber = new Climber(input, possibleStart, end, maxPoint);
+      shortestPath = Math.min(climber.traverse(), shortestPath);
+    }
+    System.out.println("Part 2: " + shortestPath);
   }
 
   private static class Climber {
@@ -39,23 +67,6 @@ public class HillClimbing {
       this.maxPoint = maxPoint;
     }
 
-    static Climber create(List<String> input) {
-      Point start = null, end = null;
-      int maxX = -1;
-      for (int y = 0; y < input.size(); y++) {
-        for (int x = 0; x < input.get(y).length(); x++) {
-          char c = input.get(y).charAt(x);
-          if (c == 'S') {
-            start = Point.of(x, y);
-          } else if (c == 'E') {
-            end = Point.of(x, y);
-          }
-        }
-        maxX = input.get(y).length() - 1; // Assume all rows same length.
-      }
-      return new Climber(input, start, end, Point.of(maxX, input.size() - 1));
-    }
-    
     int traverse() {
       queue.clear();
       visited.clear();
@@ -81,7 +92,7 @@ public class HillClimbing {
           }
         });
       }
-      return visited.get(end);
+      return visited.getOrDefault(end, Integer.MAX_VALUE);
     }
 
     private Stream<Point> getAdjacent(Point point) {

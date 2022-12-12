@@ -2,7 +2,13 @@ package aoccommon;
 
 import java.util.Arrays;
 
-public record Point (int[] coordinates) {
+public class Point {
+
+  private final int[] coordinates;
+
+  private Point(int[] coordinates) {
+    this.coordinates = coordinates;
+  }
 
   public static Point of(int... coordinates) {
     return new Point(coordinates);
@@ -13,7 +19,7 @@ public record Point (int[] coordinates) {
   }
 
   public Point copy() {
-    return new Point(Arrays.copyOf(coordinates(), coordinates().length));
+    return new Point(Arrays.copyOf(coordinates, coordinates.length));
   }
 
   public int getX() {

@@ -66,7 +66,6 @@ public class DistressSignal {
         i++;
       } else if (c == ']') {
         List<PacketData> list = stack.pop();
-        // stack.peek().add(list.size() == 1 ? list.get(0) : PacketData.list(list));
         stack.peek().add(PacketData.list(list));
         i++;
       } else if (Character.isDigit(c)) {

@@ -2,13 +2,13 @@ package aoc2022.day13;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import aoccommon.InputHelper;
 
@@ -40,6 +40,12 @@ public class DistressSignal {
         .map(i -> pairs.get(i).compare() < 0 ? i + 1 : 0)
         .sum();
     System.out.println("Part 1: " + indexSum);
+
+    Stream<Packet> allPackets = pairs.stream().flatMap(pair -> Stream.of(pair.left, pair.right));
+    List<Packet> dividers = List.of(parsePacket("[[2]]"), parsePacket("[[6]]"));
+    List<Packet> sorted = Stream.concat(allPackets, dividers.stream()).sorted().collect(Collectors.toList());
+    long decoderKey = dividers.stream().mapToLong(d -> sorted.indexOf(d) + 1).reduce(1, (a, b) -> a * b);
+    System.out.println("Part 2: " + decoderKey);
   }
 
   private static Packet parsePacket(String line) {
@@ -52,7 +58,7 @@ public class DistressSignal {
       throw new IllegalStateException();
     }
 
-    while(i < line.length() - 1 /* exclude closing ] */) {
+    while (i < line.length() - 1 /* exclude closing ] */) {
       c = line.charAt(i);
       debug("Parsing char %s at index %d, stack=%s", c, i, stack);
       if (c == '[') {
@@ -147,7 +153,8 @@ public class DistressSignal {
       debug("  - Compare %s vs %s", left, right);
       int compare = left.compareTo(right);
       if (compare != 0) {
-        debug("    - %s side is smaller, so inputs are %sin the right order", compare < 0 ? "Left" : "Right", compare < 0 ? "" : "not ");
+        debug("    - %s side is smaller, so inputs are %sin the right order", compare < 0 ? "Left" : "Right",
+            compare < 0 ? "" : "not ");
         return compare;
       }
     }

@@ -24,6 +24,9 @@ public class RegolithReservoir {
 
     Map map = Map.from(rockStructures);
     System.out.println("Part 1: " + map.fillWithSand().size());
+
+    map = Map.withFloor(rockStructures);
+    System.out.println("Part 2: " + map.fillWithSand().size());
   }
 
   private static class Map {
@@ -31,17 +34,26 @@ public class RegolithReservoir {
 
     private final Set<Point> rockPoints;
     private final int maxY;
+    private final boolean withFloor;
 
-    private Map(Set<Point> rockPoints, int maxY) {
+    private Map(Set<Point> rockPoints, int maxY, boolean withFloor) {
       this.rockPoints = rockPoints;
       this.maxY = maxY;
+      this.withFloor = withFloor;
     }
 
     static Map from(List<RockStructure> rockStructures) {
       Set<Point> rockPoints = rockStructures.stream().flatMap(RockStructure::allPoints).collect(Collectors.toSet());
       int maxY = rockStructures.stream().map(RockStructure::vertices).flatMap(List::stream).mapToInt(Point::getY).max()
           .getAsInt();
-      return new Map(rockPoints, maxY);
+      return new Map(rockPoints, maxY, /* withFloor= */ false);
+    }
+
+    static Map withFloor(List<RockStructure> rockStructures) {
+      Set<Point> rockPoints = rockStructures.stream().flatMap(RockStructure::allPoints).collect(Collectors.toSet());
+      int maxY = rockStructures.stream().map(RockStructure::vertices).flatMap(List::stream).mapToInt(Point::getY).max()
+          .getAsInt();
+      return new Map(rockPoints, maxY, /* withFloor= */ true);
     }
 
     private Set<Point> fillWithSand() throws Exception {
@@ -49,16 +61,21 @@ public class RegolithReservoir {
       Point sand = ORIGIN;
       Set<Point> flowPath = new HashSet<>();
       while (true) {
-        Optional<Point> next = next(rockPoints, sandAtRest, sand);
+        Optional<Point> next = next(sandAtRest, sand);
         if (next.isPresent()) {
           sand = next.get();
           flowPath.add(sand);
-          if (sand.getY() >= maxY) {
+          if (sand.getY() >= maxY && !withFloor) {
             // Sand flowing into the abyss.
             printAndWait(sandAtRest, flowPath);
             break;
           }
           continue;
+        }
+        if (sand.equals(ORIGIN)) {
+          // Source is blocked!
+          sandAtRest.add(sand);
+          break;
         }
         // No move possible, sand comes to rest here.
         sandAtRest.add(sand);
@@ -68,6 +85,17 @@ public class RegolithReservoir {
         printAndWait(sandAtRest, flowPath);
       }
       return sandAtRest;
+    }
+
+    private Optional<Point> next(Set<Point> sandAtRest, Point sand) {
+      for (SandMove move : SandMove.values()) {
+        Point next = Point.of(sand.getX() + move.xd, sand.getY() + move.yd);
+        boolean hitFloor = withFloor && (next.getY() >= maxY + 2);
+        if (!rockPoints.contains(next) && !sandAtRest.contains(next) && !hitFloor) {
+          return Optional.of(next);
+        }
+      }
+      return Optional.empty();
     }
 
     private void printAndWait(Set<Point> sandAtRest, Set<Point> flowPath)
@@ -106,16 +134,6 @@ public class RegolithReservoir {
       // Thread.sleep(1000);
       // System.in.read();
     }
-  }
-
-  private static Optional<Point> next(Set<Point> rockPoints, Set<Point> sandAtRest, Point sand) {
-    for (SandMove move : SandMove.values()) {
-      Point next = Point.of(sand.getX() + move.xd, sand.getY() + move.yd);
-      if (!rockPoints.contains(next) && !sandAtRest.contains(next)) {
-        return Optional.of(next);
-      }
-    }
-    return Optional.empty();
   }
 
   private static enum SandMove {

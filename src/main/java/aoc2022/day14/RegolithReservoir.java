@@ -16,39 +16,96 @@ import aoccommon.Point;
 public class RegolithReservoir {
 
   private static final String INPUT = "aoc2022/day14/input.txt";
-  private static final Point ORIGIN = Point.of(500, 0);
+  private static final boolean DEBUG = false;
 
   public static void main(String[] args) throws Exception {
     List<RockStructure> rockStructures = InputHelper.linesFromResource(INPUT).map(RockStructure::parse)
         .collect(Collectors.toList());
 
-    Set<Point> rockPoints = rockStructures.stream().flatMap(RockStructure::allPoints).collect(Collectors.toSet());
-    int maxY = rockStructures.stream().map(RockStructure::vertices).flatMap(List::stream).mapToInt(Point::getY).max()
-        .getAsInt();
+    Map map = Map.from(rockStructures);
+    System.out.println("Part 1: " + map.fillWithSand().size());
+  }
 
-    Set<Point> sandAtRest = new HashSet<>();
-    Point sand = ORIGIN;
-    Set<Point> flowPath = new HashSet<>();
-    while (true) {
-      Optional<Point> next = next(rockPoints, sandAtRest, sand);
-      if (next.isPresent()) {
-        sand = next.get();
-        flowPath.add(sand);
-        if (sand.getY() >= maxY) {
-          // Sand flowing into the abyss.
-          printAndWait(rockPoints, sandAtRest, flowPath, maxY);
-          break;
-        }
-        continue;
-      }
-      // No move possible, sand comes to rest here.
-      sandAtRest.add(sand);
-      flowPath.clear();
-      // New sand unit produced at origin.
-      sand = ORIGIN;
-      // printAndWait(rockPoints, sandAtRest, flowPath, maxY);
+  private static class Map {
+    private static final Point ORIGIN = Point.of(500, 0);
+
+    private final Set<Point> rockPoints;
+    private final int maxY;
+
+    private Map(Set<Point> rockPoints, int maxY) {
+      this.rockPoints = rockPoints;
+      this.maxY = maxY;
     }
-    System.out.println("Part 1: " + sandAtRest.size());
+
+    static Map from(List<RockStructure> rockStructures) {
+      Set<Point> rockPoints = rockStructures.stream().flatMap(RockStructure::allPoints).collect(Collectors.toSet());
+      int maxY = rockStructures.stream().map(RockStructure::vertices).flatMap(List::stream).mapToInt(Point::getY).max()
+          .getAsInt();
+      return new Map(rockPoints, maxY);
+    }
+
+    private Set<Point> fillWithSand() throws Exception {
+      Set<Point> sandAtRest = new HashSet<>();
+      Point sand = ORIGIN;
+      Set<Point> flowPath = new HashSet<>();
+      while (true) {
+        Optional<Point> next = next(rockPoints, sandAtRest, sand);
+        if (next.isPresent()) {
+          sand = next.get();
+          flowPath.add(sand);
+          if (sand.getY() >= maxY) {
+            // Sand flowing into the abyss.
+            printAndWait(sandAtRest, flowPath);
+            break;
+          }
+          continue;
+        }
+        // No move possible, sand comes to rest here.
+        sandAtRest.add(sand);
+        flowPath.clear();
+        // New sand unit produced at origin.
+        sand = ORIGIN;
+        printAndWait(sandAtRest, flowPath);
+      }
+      return sandAtRest;
+    }
+
+    private void printAndWait(Set<Point> sandAtRest, Set<Point> flowPath)
+        throws Exception {
+      if (!DEBUG) {
+        return;
+      }
+      // System.out.print("\033[H\033[2J");
+      // System.out.flush();
+      int minX = Stream.concat(flowPath.stream(), Stream.concat(rockPoints.stream(), sandAtRest.stream()))
+          .mapToInt(Point::getX)
+          .min()
+          .getAsInt();
+      int maxX = Stream.concat(flowPath.stream(), Stream.concat(rockPoints.stream(), sandAtRest.stream()))
+          .mapToInt(Point::getX)
+          .max()
+          .getAsInt();
+      for (int y = 0; y <= maxY; y++) {
+        System.out.print(String.format("%02d ", y));
+        for (int x = minX; x <= maxX; x++) {
+          Point point = Point.of(x, y);
+          if (rockPoints.contains(point)) {
+            System.out.print('#');
+          } else if (sandAtRest.contains(point)) {
+            System.out.print('o');
+          } else if (ORIGIN.equals(point)) {
+            System.out.print('+');
+          } else if (flowPath.contains(point)) {
+            System.out.print('~');
+          } else {
+            System.out.print('.');
+          }
+        }
+        System.out.println();
+      }
+      // Thread.sleep(1000);
+      // System.in.read();
+    }
   }
 
   private static Optional<Point> next(Set<Point> rockPoints, Set<Point> sandAtRest, Point sand) {
@@ -98,44 +155,5 @@ public class RegolithReservoir {
             .mapToObj(y -> Point.of(x, y)))
         .flatMap(s -> s);
 
-  }
-
-  private static final boolean DEBUG = false;
-
-  private static void printAndWait(Set<Point> rockPoints, Set<Point> sandAtRest, Set<Point> flowPath, int maxY)
-      throws Exception {
-    if (!DEBUG) {
-      return;
-    }
-    // System.out.print("\033[H\033[2J");
-    // System.out.flush();
-    int minX = Stream.concat(flowPath.stream(), Stream.concat(rockPoints.stream(), sandAtRest.stream()))
-        .mapToInt(Point::getX)
-        .min()
-        .getAsInt();
-    int maxX = Stream.concat(flowPath.stream(), Stream.concat(rockPoints.stream(), sandAtRest.stream()))
-        .mapToInt(Point::getX)
-        .max()
-        .getAsInt();
-    for (int y = 0; y <= maxY; y++) {
-      System.out.print(String.format("%02d ", y));
-      for (int x = minX; x <= maxX; x++) {
-        Point point = Point.of(x, y);
-        if (rockPoints.contains(point)) {
-          System.out.print('#');
-        } else if (sandAtRest.contains(point)) {
-          System.out.print('o');
-        } else if (ORIGIN.equals(point)) {
-          System.out.print('+');
-        } else if (flowPath.contains(point)) {
-          System.out.print('~');
-        } else {
-          System.out.print('.');
-        }
-      }
-      System.out.println();
-    }
-    // Thread.sleep(1000);
-    // System.in.read();
   }
 }

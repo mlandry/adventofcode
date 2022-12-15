@@ -1,7 +1,7 @@
 package aoc2022.day15;
 
 import java.util.HashSet;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -30,37 +30,31 @@ public class BeaconExclusionZone {
             m -> Point.of(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2))),
             m -> Point.of(Integer.parseInt(m.group(3)), Integer.parseInt(m.group(4)))));
 
-    // System.out.println("Part 1: " + coveredPointsInRow(sensorBeacons,
-    // TARGET_ROW).size());
     System.out.println("Part 1: "
-        + (coveredRangesInRow(sensorBeacons, TARGET_ROW).disjointSize() - beaconsInRow(sensorBeacons, TARGET_ROW)));
+        + (coveredRangesInRow(sensorBeacons, TARGET_ROW, Integer.MIN_VALUE, Integer.MAX_VALUE).disjointSize()
+            - beaconsInRow(sensorBeacons, TARGET_ROW)));
+
+    Point beacon = findBeacon(sensorBeacons, MAX_XY);
+    long frequency = (4000000L * (long) beacon.getX()) + beacon.getY();
+    System.out.println("Part 2: " + frequency);
+  }
+
+  private static Point findBeacon(Map<Point, Point> sensorBeacons, int maxXY) {
+    for (int y = 0; y <= maxXY; y++) {
+      RangeSet coveredX = coveredRangesInRow(sensorBeacons, y, 0, maxXY);
+      if (coveredX.disjointSize() < (maxXY + 1)) {
+        for (int x = 0; x <= maxXY; x++) {
+          if (!coveredX.contains(x)) {
+            return Point.of(x, y);
+          }
+        }
+      }
+    }
+    return null;
   }
 
   private static int manhattanDistance(Point a, Point b) {
     return Math.abs(a.getX() - b.getX()) + Math.abs(a.getY() - b.getY());
-  }
-
-  private static Set<Point> coveredPointsInRow(Map<Point, Point> sensorBeacons, int row) {
-    Set<Point> covered = new HashSet<>();
-    for (Map.Entry<Point, Point> sensor : sensorBeacons.entrySet()) {
-      int dist = manhattanDistance(sensor.getKey(), sensor.getValue());
-      int ydelta = Math.abs(sensor.getKey().getY() - row);
-      // Fan out and add points in both directions.
-      for (int xdelta = 0; xdelta <= dist - ydelta; xdelta++) {
-        covered.add(Point.of(sensor.getKey().getX() + xdelta, row));
-        covered.add(Point.of(sensor.getKey().getX() - xdelta, row));
-      }
-      // Don't count the actual beacon.
-      covered.remove(sensor.getValue());
-    }
-    return covered;
-  }
-
-  private static RangeSet coveredRangesInRow(Map<Point, Point> sensorBeacons, int row) {
-    final RangeSet rangeSet = RangeSet.create();
-    sensorBeacons.entrySet().stream()
-        .forEach(entry -> coveredRangeInRow(entry.getKey(), entry.getValue(), row).ifPresent(rangeSet::add));
-    return rangeSet;
   }
 
   private static int beaconsInRow(Map<Point, Point> sensorBeacons, int row) {
@@ -68,14 +62,21 @@ public class BeaconExclusionZone {
         .size();
   }
 
-  private static Optional<Range> coveredRangeInRow(Point sensor, Point beacon, int row) {
+  private static RangeSet coveredRangesInRow(Map<Point, Point> sensorBeacons, int row, int min, int max) {
+    final RangeSet rangeSet = RangeSet.create();
+    sensorBeacons.entrySet().stream()
+        .forEach(entry -> coveredRangeInRow(entry.getKey(), entry.getValue(), row, min, max).ifPresent(rangeSet::add));
+    return rangeSet;
+  }
+
+  private static Optional<Range> coveredRangeInRow(Point sensor, Point beacon, int row, int min, int max) {
     int dist = manhattanDistance(sensor, beacon);
     int ydelta = Math.abs(sensor.getY() - row);
     if (ydelta > dist) {
       return Optional.empty();
     }
     int xdelta = dist - ydelta;
-    return Optional.of(new Range(sensor.getX() - xdelta, sensor.getX() + xdelta));
+    return Optional.of(new Range(Math.max(min, sensor.getX() - xdelta), Math.min(max, sensor.getX() + xdelta)));
   }
 
   private static record Range(int lower, int upper) {
@@ -93,23 +94,28 @@ public class BeaconExclusionZone {
       return new RangeSet(new HashSet<>());
     }
 
+    boolean contains(int value) {
+      return ranges.stream().anyMatch(r -> r.contains(value));
+    }
+
     int disjointSize() {
       return ranges.stream().mapToInt(Range::size).sum();
     }
 
-    void add(Range toAdd) {
+    void add(Range newRange) {
       Optional<Range> containsLower = Optional.empty();
       Optional<Range> containsUpper = Optional.empty();
+      Optional<Range> toAdd = Optional.empty();
       for (Range range : ranges) {
-        if (range.contains(toAdd.lower())) {
+        if (range.contains(newRange.lower())) {
           containsLower = Optional.of(range);
         }
-        if (range.contains(toAdd.upper())) {
+        if (range.contains(newRange.upper())) {
           containsUpper = Optional.of(range);
         }
       }
       if (containsLower.isEmpty() && containsUpper.isEmpty()) {
-        ranges.add(toAdd);
+        toAdd = Optional.of(newRange);
       } else if (containsLower.isPresent()) {
         Range lower = containsLower.get();
         if (containsUpper.isPresent()) {
@@ -121,19 +127,32 @@ public class BeaconExclusionZone {
             // Merge the lower and upper ranges.
             ranges.remove(lower);
             ranges.remove(upper);
-            ranges.add(new Range(lower.lower(), upper.upper()));
+            toAdd = Optional.of(new Range(lower.lower(), upper.upper()));
           }
         } else {
           // Merge the new range with the lower range.
           ranges.remove(lower);
-          ranges.add(new Range(lower.lower(), toAdd.upper()));
+          toAdd = Optional.of(new Range(lower.lower(), newRange.upper()));
         }
       } else {
         Range upper = containsUpper.get();
         // Merge the new range with the upper range.
         ranges.remove(upper);
-        ranges.add(new Range(toAdd.lower(), upper.upper()));
+        toAdd = Optional.of(new Range(newRange.lower(), upper.upper()));
       }
+      if (toAdd.isEmpty()) {
+        return;
+      }
+
+      // Check for existing ranges contained in the new range.
+      Iterator<Range> iter = ranges.iterator();
+      while (iter.hasNext()) {
+        Range range = iter.next();
+        if (toAdd.get().contains(range.lower()) && toAdd.get().contains(range.upper())) {
+          iter.remove();
+        }
+      }
+      ranges.add(toAdd.get());
     }
   }
 }

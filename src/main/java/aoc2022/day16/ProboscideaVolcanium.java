@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -28,20 +29,27 @@ public class ProboscideaVolcanium {
     System.out.println("Part 1: " + volcano.findMaximumPressureReleased(State.start("AA", 30)));
   }
 
-  private static record State(String current, Set<String> opened, int remainingTime) {
+  private static record State(String current, Optional<String> elephant, Set<String> opened, int remainingTime) {
     static State start(String start, int timeLimit) {
-      return new State(start, Set.of(), timeLimit);
+      return new State(start, Optional.empty(), Set.of(), timeLimit);
     }
 
-    State openCurrentValve() {
-      Set<String> copy = new HashSet<>(opened);
-      copy.add(current);
-      return new State(current, copy, remainingTime - 1);
+    static State startWithElephant(String start, int timeLimit) {
+      return new State(start, Optional.of(start), Set.of(), timeLimit - 4 /* teachingElephant */);
+    }
+  }
+
+  private static record Action(String endPosition, Optional<String> valveToOpen) {
+    static Action move(String to) {
+      return new Action(to, Optional.empty());
     }
 
-    State move(String next) {
-      return new State(next, new HashSet<>(opened), remainingTime - 1);
+    static Action openValve(String valve) {
+      return new Action(valve, Optional.of(valve));
     }
+  }
+
+  private static record Result(State state, int pressureReleased) {
   }
 
   private static class Volcano {
@@ -81,25 +89,37 @@ public class ProboscideaVolcanium {
         return cached;
       }
 
-      int flowRate = valves.get(state.current);
+      Stream<Result> possibilities = actionPossibilities(state.current, state.remainingTime, state.opened)
+          .map(action -> {
+            Set<String> opened = state.opened;
+            int pressureReleased = 0;
+            int remainingTime = state.remainingTime - 1;
+            if (action.valveToOpen.isPresent()) {
+              opened = new HashSet<>(opened);
+              opened.add(action.valveToOpen.get());
+              pressureReleased = remainingTime * valves.get(action.valveToOpen.get());
+            }
+            State child = new State(action.endPosition, Optional.empty(), opened, remainingTime);
+            return new Result(child, pressureReleased + findMaximumPressureReleased(child));
+          });
 
-      IntStream.Builder possibilities = IntStream.builder();
-      if (state.remainingTime >= 1 && flowRate > 0 && !state.opened.contains(state.current)) {
-        State child = state.openCurrentValve();
-        int pressureReleased = child.remainingTime * flowRate;
-        possibilities.add(pressureReleased + findMaximumPressureReleased(child));
-      }
-
-      for (String next : tunnels.get(state.current)) {
-        if (state.remainingTime > 2) {
-          State child = state.move(next);
-          possibilities.add(findMaximumPressureReleased(child));
-        }
-      }
-
-      cached = possibilities.build().max().orElse(0);
+      cached = possibilities.mapToInt(Result::pressureReleased).max().orElse(0);
       cache.put(state, cached);
       return cached;
+    }
+
+    Stream<Action> actionPossibilities(String position, int remainingTime, Set<String> opened) {
+      Stream.Builder<Action> actions = Stream.builder();
+      if (remainingTime >= 1 && valves.get(position) > 0 && !opened.contains(position)) {
+        actions.add(Action.openValve(position));
+      }
+
+      if (remainingTime > 2) {
+        for (String next : tunnels.get(position)) {
+          actions.add(Action.move(next));
+        }
+      }
+      return actions.build();
     }
   }
 }

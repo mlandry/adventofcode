@@ -49,6 +49,7 @@ public final record Range<T extends Comparable<T>> (Endpoint<T> lower, Endpoint<
   public boolean contains(T value) {
     int lowerCompare = lower.value().compareTo(value);
     int upperCompare = value.compareTo(upper.value());
-    return (lower.inclusive() ? lowerCompare <= 0 ? lowerCompare < 0) && (upper.inclusive() ? upperCompare >= 0 : upperCompare > 0);
+    return (lower.inclusive() ? lowerCompare <= 0 : lowerCompare < 0)
+        && (upper.inclusive() ? upperCompare >= 0 : upperCompare > 0);
   }
 }

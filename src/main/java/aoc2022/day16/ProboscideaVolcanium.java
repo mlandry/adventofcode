@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import aoccommon.Debug;
 import aoccommon.InputHelper;
 
 /** Solution for {@link https://adventofcode.com/2022/day/16}. */
@@ -33,6 +32,7 @@ public class ProboscideaVolcanium {
     static State start(String start, int timeLimit) {
       return new State(start, Set.of(), timeLimit);
     }
+
     State openCurrentValve() {
       Set<String> copy = new HashSet<>(opened);
       copy.add(current);
@@ -48,7 +48,8 @@ public class ProboscideaVolcanium {
     private final Map<String, Integer> valves;
     private final Map<String, List<String>> tunnels;
 
-    // Memoized cache of {currentNode + openedValves + remainingTime} => maximum pressure.
+    // Memoized cache of {currentNode + openedValves + remainingTime} => maximum
+    // pressure.
     private final Map<State, Integer> cache = new HashMap<>();
 
     private Volcano(Map<String, Integer> valves, Map<String, List<String>> tunnels) {
@@ -79,7 +80,7 @@ public class ProboscideaVolcanium {
       if (cached != null) {
         return cached;
       }
-      
+
       int flowRate = valves.get(state.current);
 
       IntStream.Builder possibilities = IntStream.builder();

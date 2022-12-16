@@ -1,11 +1,9 @@
 package aoc2022.day16;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +25,7 @@ public class ProboscideaVolcanium {
   public static void main(String[] args) throws Exception {
     Volcano volcano = Volcano.build(InputHelper.linesFromResource(INPUT));
     System.out.println("Part 1: " + volcano.findMaximumPressureReleased(State.start("AA", 30)));
+    System.out.println("Part 2: " + volcano.findMaximumPressureReleased(State.startWithElephant("AA", 30)));
   }
 
   private static record State(String current, Optional<String> elephant, Set<String> opened, int remainingTime) {
@@ -90,7 +89,7 @@ public class ProboscideaVolcanium {
       }
 
       Stream<Result> possibilities = actionPossibilities(state.current, state.remainingTime, state.opened)
-          .map(action -> {
+          .flatMap(action -> {
             Set<String> opened = state.opened;
             int pressureReleased = 0;
             int remainingTime = state.remainingTime - 1;
@@ -99,8 +98,28 @@ public class ProboscideaVolcanium {
               opened.add(action.valveToOpen.get());
               pressureReleased = remainingTime * valves.get(action.valveToOpen.get());
             }
-            State child = new State(action.endPosition, Optional.empty(), opened, remainingTime);
-            return new Result(child, pressureReleased + findMaximumPressureReleased(child));
+
+            if (state.elephant.isEmpty()) {
+              State child = new State(action.endPosition, Optional.empty(), opened, remainingTime);
+              return Stream.of(new Result(child, pressureReleased + findMaximumPressureReleased(child)));
+            }
+            Stream<Action> elephantPossibilities = actionPossibilities(state.elephant().get(), state.remainingTime,
+                opened);
+
+            final Set<String> selfOpened = opened;
+            final int selfPressureReleased = pressureReleased;
+            return elephantPossibilities.map(elephantAction -> {
+              Set<String> elephantOpened = selfOpened;
+              int elephantPressureReleased = selfPressureReleased;
+              if (elephantAction.valveToOpen.isPresent()) {
+                elephantOpened = new HashSet<>(elephantOpened);
+                elephantOpened.add(elephantAction.valveToOpen.get());
+                elephantPressureReleased += remainingTime * valves.get(elephantAction.valveToOpen.get());
+              }
+              State child = new State(action.endPosition, Optional.of(elephantAction.endPosition), elephantOpened,
+                  remainingTime);
+              return new Result(child, elephantPressureReleased + findMaximumPressureReleased(child));
+            });
           });
 
       cached = possibilities.mapToInt(Result::pressureReleased).max().orElse(0);

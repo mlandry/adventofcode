@@ -1,12 +1,16 @@
 package aoccommon;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public final class Debug {
   private static boolean ENABLED = false;
   private static int COUNTER = 0;
 
-  public static void enable() {
+  private static final Map<String, Long> TIMERS = new HashMap<>();
+
+  public static void enablePrint() {
     ENABLED = true;
   }
 
@@ -36,5 +40,14 @@ public final class Debug {
     if (COUNTER++ % n == 0) {
       println(fmt, args);
     }
+  }
+
+  public static void startTimer(String name) {
+    TIMERS.put(name, System.currentTimeMillis());
+  }
+
+  public static void endTimer(String name) {
+    long elapsed = System.currentTimeMillis() - TIMERS.remove(name);
+    println("[%s]: %d", name, elapsed);
   }
 }

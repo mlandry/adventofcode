@@ -26,17 +26,20 @@ public class ProboscideaVolcanium {
       .compile("^Valve\\ (.+)\\ has\\ flow\\ rate=(\\d+);\\ tunnels?\\ leads?\\ to\\ valves?\\ (.+)$");
 
   public static void main(String[] args) throws Exception {
-    // Debug.enable();
+    Debug.enablePrint();
     Volcano volcano = Volcano.build(InputHelper.linesFromResource(INPUT));
+    Debug.startTimer("main");
     System.out.println("Part 1: " + volcano.maxmimizePressureReleased(State.start("AA", 30)));
+    Debug.endTimer("main");
     // System.out.println("Part 2: " +
     // volcano.findMaximumPressureReleased(State.startWithElephant("AA", 30)));
   }
 
   private static class Volcano {
     private final Map<String, Integer> valves;
-
     private final Map<String, Map<String, Integer>> shortestPaths;
+    
+    private final Map<State, Set<ValveSequence>> cache = new HashMap<>();
 
     private Volcano(Map<String, Integer> valves, Map<String, Map<String, Integer>> shortestPaths) {
       this.valves = valves;
@@ -91,13 +94,18 @@ public class ProboscideaVolcanium {
           Collections.unmodifiableMap(shortestPaths));
     }
 
-    private final Map<State, Integer> cache = new HashMap<>();
-
     int maxmimizePressureReleased(State state) {
-      Integer maximum = cache.get(state);
-      if (maximum != null) {
-        return maximum;
+      return findAllValveSequences(state).stream().mapToInt(ValveSequence::pressureReleased).max().orElse(0);
+    }
+
+
+
+    Set<ValveSequence> findAllValveSequences(State state) {
+      Set<ValveSequence> valveSequences = cache.get(state);
+      if (valveSequences != null) {
+        return valveSequences;
       }
+      valveSequences = new HashSet<>();
 
       Set<String> remaining = new HashSet<>(valves.keySet());
       remaining.removeAll(state.opened);
@@ -107,15 +115,17 @@ public class ProboscideaVolcanium {
         if (timeTaken < state.timeRemaining && valves.get(valve) > 0) {
           int pressureReleasedFromValve = (state.timeRemaining - timeTaken) * valves.get(valve);
           State newState = state.afterOpeningValve(valve, timeTaken);
-          int pressureReleased = pressureReleasedFromValve + maxmimizePressureReleased(newState);
-          maximum = maximum == null ? pressureReleased : Math.max(maximum, pressureReleased);
+          Set<ValveSequence> nextValveSequences = findAllValveSequences(newState);
+          if (nextValveSequences.isEmpty()) {
+            valveSequences.add(ValveSequence.of(valve, pressureReleasedFromValve));
+          } else {
+            nextValveSequences.stream()
+                .map(vs -> vs.appendFront(valve, pressureReleasedFromValve))
+                .forEach(valveSequences::add);
+          }
         }
       }
-
-      maximum = Optional.ofNullable(maximum).orElse(0);
-      cache.put(state, maximum);
-      Debug.println("%s, %d", state, maximum);
-      return maximum;
+      return valveSequences;
     }
   }
 
@@ -128,6 +138,18 @@ public class ProboscideaVolcanium {
       Set<String> opened = new HashSet<>(this.opened);
       opened.add(valve);
       return new State(valve, opened, timeRemaining - timeTaken);
+    }
+  }
+
+  static record ValveSequence(List<String> opened, int pressureReleased) {
+    static ValveSequence of(String valve, int pressureReleased) {
+      return new ValveSequence(List.of(valve), pressureReleased);
+    }
+
+    ValveSequence appendFront(String valve, int pressureReleasedFromValve) {
+      return new ValveSequence(
+          Stream.concat(Stream.of(valve), opened.stream()).collect(Collectors.toList()),
+          pressureReleased + pressureReleasedFromValve);
     }
   }
 

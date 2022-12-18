@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,7 +39,7 @@ public class ProboscideaVolcanium {
   private static class Volcano {
     private final Map<String, Integer> valves;
     private final Map<String, Map<String, Integer>> shortestPaths;
-    
+
     private final Map<State, Set<ValveSequence>> cache = new HashMap<>();
 
     private Volcano(Map<String, Integer> valves, Map<String, Map<String, Integer>> shortestPaths) {
@@ -98,8 +99,6 @@ public class ProboscideaVolcanium {
       return findAllValveSequences(state).stream().mapToInt(ValveSequence::pressureReleased).max().orElse(0);
     }
 
-
-
     Set<ValveSequence> findAllValveSequences(State state) {
       Set<ValveSequence> valveSequences = cache.get(state);
       if (valveSequences != null) {
@@ -127,6 +126,19 @@ public class ProboscideaVolcanium {
       }
       return valveSequences;
     }
+
+    int maximizePressureReleasedWithElephant(State state) {
+      state = state.subtractTime(4);
+      Set<ValveSequence> sequences = findAllValveSequences(state);
+    }
+
+    Set<Set<ValveSequence>> findAllNonOverlappingSequencePair(Set<ValveSequence> sequences) {
+      return sequences.stream()
+          .flatMap(s1 -> sequences.stream()
+              .filter(s2 -> s1.disjoint(s2))
+              .map(s2 -> Set.of(s1, s2)))
+          .collect(Collectors.toSet());
+    }
   }
 
   static record State(String current, Set<String> opened, int timeRemaining) {
@@ -139,18 +151,27 @@ public class ProboscideaVolcanium {
       opened.add(valve);
       return new State(valve, opened, timeRemaining - timeTaken);
     }
+
+    State subtractTime(int timeDelta) {
+      return new State(current, opened, timeRemaining - timeDelta);
+    }
   }
 
-  static record ValveSequence(List<String> opened, int pressureReleased) {
+  static record ValveSequence(TreeSet<String> opened, int pressureReleased) {
     static ValveSequence of(String valve, int pressureReleased) {
-      return new ValveSequence(List.of(valve), pressureReleased);
+      TreeSet<String> opened = new TreeSet<>();
+      opened.add(valve);
+      return new ValveSequence(opened, pressureReleased);
     }
 
     ValveSequence appendFront(String valve, int pressureReleasedFromValve) {
       return new ValveSequence(
-          Stream.concat(Stream.of(valve), opened.stream()).collect(Collectors.toList()),
+          Stream.concat(Stream.of(valve), opened.stream()).collect(Collectors.toCollection(TreeSet::new)),
           pressureReleased + pressureReleasedFromValve);
     }
-  }
 
+    boolean disjoint(ValveSequence other) {
+      return Collections.disjoint(opened, other.opened);
+    }
+  }
 }

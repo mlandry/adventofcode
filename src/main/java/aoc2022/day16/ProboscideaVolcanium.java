@@ -4,12 +4,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import aoccommon.InputHelper;
@@ -17,7 +19,7 @@ import aoccommon.InputHelper;
 /** Solution for {@link https://adventofcode.com/2022/day/16}. */
 public class ProboscideaVolcanium {
 
-  private static final String INPUT = "aoc2022/day16/input.txt";
+  private static final String INPUT = "aoc2022/day16/example.txt";
 
   private static final Pattern REGEX = Pattern
       .compile("^Valve\\ (.+)\\ has\\ flow\\ rate=(\\d+);\\ tunnels?\\ leads?\\ to\\ valves?\\ (.+)$");
@@ -28,7 +30,11 @@ public class ProboscideaVolcanium {
     System.out.println("Part 2: " + volcano.findMaximumPressureReleased(State.startWithElephant("AA", 30)));
   }
 
-  private static record State(String current, Optional<String> elephant, Set<String> opened, int remainingTime) {
+  private static record State(
+      String current,
+      Optional<String> elephant,
+      Set<String> opened,
+      int remainingTime) {
     static State start(String start, int timeLimit) {
       return new State(start, Optional.empty(), Set.of(), timeLimit);
     }
@@ -55,13 +61,42 @@ public class ProboscideaVolcanium {
     private final Map<String, Integer> valves;
     private final Map<String, List<String>> tunnels;
 
-    // Memoized cache of {currentNode + openedValves + remainingTime} => maximum
-    // pressure.
+    private final Map<String, Map<String, Integer>> shortestPaths;
+
+    // Memoized cache of {currentNode + openedValves + remainingTime} => result.
     private final Map<State, Integer> cache = new HashMap<>();
 
-    private Volcano(Map<String, Integer> valves, Map<String, List<String>> tunnels) {
+    private Volcano(Map<String, Integer> valves, Map<String, List<String>> tunnels,
+        Map<String, Map<String, Integer>> shortestPaths) {
       this.valves = valves;
       this.tunnels = tunnels;
+      this.shortestPaths = shortestPaths;
+    }
+
+    static Map<String, Map<String, Integer>> computeAllShortestPaths(Map<String, List<String>> tunnels) {
+      return tunnels.keySet().stream()
+          .collect(Collectors.toMap(key -> key, key -> computeShortestPaths(key, tunnels)));
+    }
+
+    static Map<String, Integer> computeShortestPaths(String start, Map<String, List<String>> tunnels) {
+      Queue<String> queue = new LinkedList<>();
+      Map<String, Integer> shortestPaths = new HashMap<>();
+
+      shortestPaths.put(start, 0);
+      queue.offer(start);
+
+      while (!queue.isEmpty()) {
+        String current = queue.poll();
+        int path = shortestPaths.get(current);
+        for (String next : tunnels.get(current)) {
+          if (shortestPaths.containsKey(next)) {
+            continue;
+          }
+          shortestPaths.put(next, path + 1);
+          queue.offer(next);
+        }
+      }
+      return shortestPaths;
     }
 
     static Volcano build(Stream<String> input) {
@@ -79,7 +114,12 @@ public class ProboscideaVolcanium {
             List<String> connected = Arrays.asList(m.group(3).split(", "));
             tunnels.put(name, connected);
           });
-      return new Volcano(Collections.unmodifiableMap(valves), Collections.unmodifiableMap(tunnels));
+
+      Map<String, Map<String, Integer>> shortestPaths = computeAllShortestPaths(tunnels);
+      return new Volcano(
+          Collections.unmodifiableMap(valves),
+          Collections.unmodifiableMap(tunnels),
+          Collections.unmodifiableMap(shortestPaths));
     }
 
     int findMaximumPressureReleased(State state) {

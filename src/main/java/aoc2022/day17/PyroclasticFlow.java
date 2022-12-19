@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import aoccommon.InputHelper;
 import aoccommon.Point;
@@ -59,10 +58,15 @@ public class PyroclasticFlow {
       return 0 - filled.stream().mapToInt(Point::getY).min().orElse(0);
     }
 
-    void dropRocks(int numRocks) {
+    void clear() {
+      filled.clear();
+    }
+
+    void dropRocks(long numRocks) {
       int seqIndex = 0;
 
-      for (int i = 0; i < numRocks; i++) {
+      int iterations = (int) Math.min(numRocks, (long) Integer.MAX_VALUE);
+      for (int i = 0; i < iterations; i++) {
         debug("height=%d after %d rocks", getHeight(), i);
         Rock shape = SHAPES.get(i % SHAPES.size());
         int highestRock = filled.stream().mapToInt(Point::getY).min().orElse(0);
@@ -143,5 +147,8 @@ public class PyroclasticFlow {
             .collect(Collectors.toList()));
     chamber.dropRocks(2022);
     System.out.println("Part 1: " + chamber.getHeight());
+    chamber.clear();
+    // chamber.dropRocks(1000000000000L);
+    System.out.println("Part 2: " + chamber.getHeight());
   }
 }

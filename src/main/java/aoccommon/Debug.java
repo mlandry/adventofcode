@@ -38,7 +38,7 @@ public final class Debug {
       return;
     }
     if (COUNTER++ % n == 0) {
-      println(fmt, args);
+      println("<%d> %s", (COUNTER - 1), String.format(fmt, args));
     }
   }
 

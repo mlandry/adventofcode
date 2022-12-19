@@ -1,5 +1,6 @@
 package aoc2022.day16;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,13 +28,12 @@ public class ProboscideaVolcanium {
       .compile("^Valve\\ (.+)\\ has\\ flow\\ rate=(\\d+);\\ tunnels?\\ leads?\\ to\\ valves?\\ (.+)$");
 
   public static void main(String[] args) throws Exception {
-    Debug.enablePrint();
+    // Debug.enablePrint();
     Volcano volcano = Volcano.build(InputHelper.linesFromResource(INPUT));
     Debug.startTimer("main");
     System.out.println("Part 1: " + volcano.maxmimizePressureReleased(State.start("AA", 30)));
+    System.out.println("Part 2: " + volcano.maximizePressureReleasedWithElephant(State.start("AA", 30)));
     Debug.endTimer("main");
-    // System.out.println("Part 2: " +
-    // volcano.findMaximumPressureReleased(State.startWithElephant("AA", 30)));
   }
 
   private static class Volcano {
@@ -115,28 +115,55 @@ public class ProboscideaVolcanium {
           int pressureReleasedFromValve = (state.timeRemaining - timeTaken) * valves.get(valve);
           State newState = state.afterOpeningValve(valve, timeTaken);
           Set<ValveSequence> nextValveSequences = findAllValveSequences(newState);
-          if (nextValveSequences.isEmpty()) {
-            valveSequences.add(ValveSequence.of(valve, pressureReleasedFromValve));
-          } else {
-            nextValveSequences.stream()
-                .map(vs -> vs.appendFront(valve, pressureReleasedFromValve))
-                .forEach(valveSequences::add);
-          }
+          valveSequences.add(ValveSequence.of(valve, pressureReleasedFromValve));
+          nextValveSequences.stream()
+              .map(vs -> vs.appendFront(valve, pressureReleasedFromValve))
+              .forEach(valveSequences::add);
         }
       }
+      cache.put(state, valveSequences);
       return valveSequences;
     }
 
     int maximizePressureReleasedWithElephant(State state) {
       state = state.subtractTime(4);
       Set<ValveSequence> sequences = findAllValveSequences(state);
+      Debug.println("%d sequences", sequences.size());
+
+      // "Optimization"? - only consider the top 1500 sequences by pressure released.
+      sequences = sequences.stream().sorted((a, b) -> Integer.compare(b.pressureReleased(), a.pressureReleased()))
+          .limit(1500).collect(Collectors.toSet());
+      int maximum = 0;
+      for (ValveSequence selfSeq : sequences) {
+        Debug.printlnEveryN(1000, "max so far = %d", maximum);
+        for (ValveSequence elephantSeq : sequences) {
+          if (selfSeq == elephantSeq) {
+            continue;
+          }
+          if (selfSeq.opened().size() > valves.size() - elephantSeq.opened().size()) {
+            continue;
+          }
+          if (!selfSeq.disjoint(elephantSeq)) {
+            continue;
+          }
+          maximum = Math.max(maximum, selfSeq.pressureReleased() + elephantSeq.pressureReleased());
+        }
+      }
+      return maximum;
     }
 
-    Set<Set<ValveSequence>> findAllNonOverlappingSequencePair(Set<ValveSequence> sequences) {
+    Set<List<ValveSequence>> findAllNonOverlappingSequencePairs(Set<ValveSequence> sequences) {
+      int totalValves = valves.size();
       return sequences.stream()
+          .map(s -> {
+            Debug.printlnEveryN(1000, "computing...");
+            return s;
+          })
           .flatMap(s1 -> sequences.stream()
-              .filter(s2 -> s1.disjoint(s2))
-              .map(s2 -> Set.of(s1, s2)))
+              .filter(s2 -> s1 != s2)
+              .filter(s2 -> s2.opened().size() <= totalValves - s1.opened().size())
+              .filter(s2 -> s2.disjoint(s1))
+              .map(s2 -> List.of(s1, s2)))
           .collect(Collectors.toSet());
     }
   }

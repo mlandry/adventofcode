@@ -2,8 +2,11 @@ package aoc2022.day17;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -25,6 +28,15 @@ public class PyroclasticFlow {
     }
   }
 
+  private static record MoveAndShapeState(int moveIndex, int rockIndex) {
+  }
+
+  private static record RockAndHeightState(int rocksDropped, int highestRock) {
+  }
+
+  private static record Pattern(MoveAndShapeState state, int rockFrequency, int heightDelta) {
+  }
+
   private static final String INPUT = "aoc2022/day17/input.txt";
   private static final boolean DEBUG = false;
 
@@ -44,6 +56,8 @@ public class PyroclasticFlow {
     private final List<Character> sequence;
     private final Set<Point> filled = new HashSet<>();
 
+    private int highestRock = 0;
+
     private RockChamber(List<Character> sequence) {
       this.sequence = Collections.unmodifiableList(sequence);
     }
@@ -55,48 +69,107 @@ public class PyroclasticFlow {
     }
 
     int getHeight() {
-      return 0 - filled.stream().mapToInt(Point::getY).min().orElse(0);
+      return 0 - highestRock;
     }
 
     void clear() {
       filled.clear();
+      IntStream.range(0, WIDTH).mapToObj(x -> Point.of(x, 0)).forEach(filled::add);
+      highestRock = 0;
     }
 
-    void dropRocks(long numRocks) {
-      int seqIndex = 0;
+    boolean topRowFilled() {
+      return IntStream.range(0, WIDTH).mapToObj(x -> Point.of(x, highestRock)).allMatch(filled::contains);
+    }
+
+    /**
+     * @return maximum height reached.
+     */
+    long dropRocks(long numRocks) {
+      clear();
+      int moveSequence = 0;
+
+      // Cached map of move sequence index -> rock shape index -> height when the top row is filled.
+      // This is used to detect repeating cycles and extrapolate height for larger numbers of rocks.
+      Map<MoveAndShapeState, RockAndHeightState> cache = new HashMap<>();
 
       int iterations = (int) Math.min(numRocks, (long) Integer.MAX_VALUE);
-      for (int i = 0; i < iterations; i++) {
-        debug("height=%d after %d rocks", getHeight(), i);
+      Optional<Pattern> detectedPattern = Optional.empty();
+      
+      int i = 0;
+      for (; i < iterations; i++) {
         Rock shape = SHAPES.get(i % SHAPES.size());
-        int highestRock = filled.stream().mapToInt(Point::getY).min().orElse(0);
 
-        Point position = Point.of(LEFT_OFFSET, highestRock - BOTTOM_OFFSET - 1);
-        print(shape, position);
-        while (true) {
-          char move = sequence.get(seqIndex++ % sequence.size());
-          debug("move %s", move);
-          Point next = Point.of(position.getX() + (move == '>' ? 1 : -1), position.getY());
-          if (next.getX() >= 0 && shape.rightEdge(next) < WIDTH
-              && Collections.disjoint(shape.getActualPoints(next), filled)) {
-            position = next;
-          }
-          print(shape, position);
-
-          next = Point.of(position.getX(), position.getY() + 1);
-          boolean atRest = shape.getActualPoints(next).stream().anyMatch(filled::contains);
-          if (atRest) {
-            shape.getActualPoints(position).forEach(filled::add);
+        if (topRowFilled()) {
+          MoveAndShapeState state = new MoveAndShapeState(moveSequence % sequence.size(), i % SHAPES.size());
+          RockAndHeightState lastSeen = cache.get(state);
+          if (lastSeen != null) {
+            detectedPattern = Optional.of(
+              new Pattern(state, i - lastSeen.rocksDropped(), highestRock - lastSeen.highestRock()));
+            debug("Repeat! pattern=%s", detectedPattern);
             break;
-          } else {
-            position = next;
           }
-          print(shape, position);
+          cache.put(state, new RockAndHeightState(i, highestRock));
         }
+
+        moveSequence = dropRock(moveSequence, shape);
       }
+
+      if (iterations == numRocks && detectedPattern.isEmpty()) {
+        return getHeight();
+      }
+
+      // Extrapolate to a start from the detected pattern and then reply the rocks remaining.
+      Pattern pattern = detectedPattern.get();
+      long remainingRocks = numRocks - i;
+      long patternRepeats = remainingRocks / (long) pattern.rockFrequency();
+      long height = highestRock + (patternRepeats * (long) pattern.heightDelta());
+
+      int extraRocks = (int) (remainingRocks % pattern.rockFrequency());
+      int rockSequence = pattern.state().rockIndex();
+      
+      clear();
+      for (int e = 0; e < extraRocks; e++) {
+        Rock shape = SHAPES.get(rockSequence++ % SHAPES.size());
+        moveSequence = dropRock(moveSequence, shape);
+      }
+
+      return 0 - (height + highestRock); 
     }
 
-    void debug(String fmt, Object ... args) {
+    /**
+     * @return next moveSequence.
+     */
+    int dropRock(int moveSequence, Rock shape) {
+      Point position = Point.of(LEFT_OFFSET, highestRock - BOTTOM_OFFSET - 1);
+      // print(shape, position);
+      while (true) {
+        char move = sequence.get(moveSequence++ % sequence.size());
+        // debug("move %s", move);
+        Point next = Point.of(position.getX() + (move == '>' ? 1 : -1), position.getY());
+        if (next.getX() >= 0 && shape.rightEdge(next) < WIDTH
+            && Collections.disjoint(shape.getActualPoints(next), filled)) {
+          position = next;
+        }
+        // print(shape, position);
+
+        next = Point.of(position.getX(), position.getY() + 1);
+        boolean atRest = shape.getActualPoints(next).stream().anyMatch(filled::contains);
+        if (atRest) {
+          shape.getActualPoints(position).forEach(p -> {
+            filled.add(p);
+            highestRock = Math.min(p.getY(), highestRock);
+          });
+          break;
+        } else {
+          position = next;
+        }
+        // print(shape, position);
+      }
+      return moveSequence;
+    }
+
+    void debug(String fmt, Object... args) {
       if (!DEBUG) {
         return;
       }
@@ -140,15 +213,12 @@ public class PyroclasticFlow {
     }
   }
 
-
   public static void main(String[] args) throws Exception {
     RockChamber chamber = RockChamber.initialize(
         InputHelper.linesFromResource(INPUT).flatMapToInt(String::chars).mapToObj(c -> (char) c)
             .collect(Collectors.toList()));
-    chamber.dropRocks(2022);
-    System.out.println("Part 1: " + chamber.getHeight());
-    chamber.clear();
+    System.out.println("Part 1: " + chamber.dropRocks(2022));
     // chamber.dropRocks(1000000000000L);
-    System.out.println("Part 2: " + chamber.getHeight());
+    System.out.println("Part 2: " + chamber.dropRocks(1000000000000L));
   }
 }

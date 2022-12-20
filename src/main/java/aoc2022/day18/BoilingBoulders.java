@@ -18,7 +18,7 @@ import aoccommon.Point;
 /** Solution for {@link https://adventofcode.com/2022/day/18}. */
 public class BoilingBoulders {
 
-  private static final String INPUT = "aoc2022/day18/input.txt";
+  private static final String INPUT = "aoc2022/day18/example4.txt";
 
   public static void main(String[] args) throws Exception {
     List<Cube> cubes = InputHelper.linesFromResource(INPUT).map(Cube::parse).collect(Collectors.toList());

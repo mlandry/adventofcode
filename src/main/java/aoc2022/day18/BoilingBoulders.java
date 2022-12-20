@@ -68,7 +68,6 @@ public class BoilingBoulders {
     // State for BFS traversal. The BFS finds all externally-reachable sides.
     final Set<Point> visited = new HashSet<>();
     final Queue<Point> queue = new LinkedList<>();
-    final Set<Point> reachable = new HashSet<>();
 
     Point current = Point.of(xrange[0], yrange[0], zrange[0]);
     queue.offer(current);
@@ -82,7 +81,6 @@ public class BoilingBoulders {
           .filter(n -> n.getY() >= yrange[0] && n.getY() <= yrange[1])
           .filter(n -> n.getZ() >= zrange[0] && n.getZ() <= zrange[1])
           .forEach(n -> {
-            reachable.add(n);
             visited.add(n);
             if (!externalSidePoints.contains(n)) {
               queue.add(n);
@@ -90,7 +88,7 @@ public class BoilingBoulders {
           });
     }
     return externalSides.stream()
-        .filter(side -> side.corners().stream().anyMatch(reachable::contains))
+        .filter(side -> side.corners().stream().anyMatch(visited::contains))
         .collect(Collectors.toSet());
   }
 

@@ -1,5 +1,6 @@
 package aoc2022.day19;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -32,32 +33,80 @@ public class NotEnoughMinerals {
         .map(Blueprint::parse)
         .collect(Collectors.toList());
 
-    Factory factory = new Factory(blueprints.get(0));
+    Factory factory = new Factory(blueprints.get(1));
+    Result result = factory.produceMaximumGeodes(START);
     Debug.startTimer("main");
-    System.out.println(factory.produceMaximumGeodes(START));
-    factory.cache.entrySet().stream().filter(e -> e.getKey().timeRemaining() == 24).forEach(System.out::println);
-    System.out.println(new Factory(blueprints.get(1)).produceMaximumGeodes(START));
+    replay(blueprints.get(1), result);
+    System.out.println(result.states());
+    // factory.cache.entrySet().stream().filter(e -> e.getKey().timeRemaining() == 24).forEach(System.out::println);
+    // System.out.println(new Factory(blueprints.get(1)).produceMaximumGeodes(START));
     Debug.endTimer("main");
+  }
+
+  private static void replay(Blueprint blueprint, Result result) {
+    int[] robots = new int[]{1, 0, 0, 0};
+    int[] resources = new int[4];
+    for (int i = 1; i <= START.timeRemaining(); i++) {
+      int timeRemaining = START.timeRemaining() - i + 1;
+      Debug.println("== Minute %d ==", i);
+      Resource createdRobot = result.robotTimestamps().get(timeRemaining);
+      if (createdRobot != null) {
+        String cost = blueprint.recipes().get(createdRobot).cost().entrySet().stream()
+            .map(e -> String.format("%d %s", e.getValue(), e.getKey()))
+            .collect(Collectors.joining(" and "));
+        blueprint.recipes().get(createdRobot).cost().entrySet().stream().forEach(e -> resources[e.getKey().ordinal()] -= e.getValue());
+        Debug.println("Spend %s to start building a %s-collecting robot.", cost, createdRobot);
+      }
+
+      for (Resource r : Resource.values()) {
+        int numRobots = robots[r.ordinal()];
+        if (numRobots == 0) {
+          continue;
+        }
+        resources[r.ordinal()] += numRobots;
+        int amount = resources[r.ordinal()];
+        Debug.println("%d %s-collecting %s %d %s; you now have %d %s.", numRobots, r,
+            numRobots == 1 ? "robot collects" : "robots collect", numRobots, r, amount, r);
+      }
+
+      if (createdRobot != null) {
+        int numRobots = ++robots[createdRobot.ordinal()];
+        Debug.println("The new %s-collecting robot is ready; you now have %d of them.", createdRobot, numRobots);
+      }
+      Debug.println("");
+    }
+  }
+
+  // Temporary data structure for debugging.
+  private static record Result(Map<Integer, Resource> robotTimestamps, int geodeProduced, List<State> states) {
+    Result update(int timeRemaining, Resource robotCreated, int additionalGeode, State state) {
+      Map<Integer, Resource> copy = new HashMap<>(robotTimestamps);
+      copy.put(timeRemaining, robotCreated);
+      List<State> statesCopy = new ArrayList<>(states);
+      statesCopy.add(state);
+      return new Result(copy, geodeProduced + additionalGeode, statesCopy);
+    }
   }
 
   private static class Factory {
     private final Blueprint blueprint;
 
     // Memoized cache of state -> produced geodes.
-    private final Map<State, Integer> cache = new HashMap<>();
+    private final Map<State, Result> cache = new HashMap<>();
 
     Factory(Blueprint blueprint) {
       this.blueprint = blueprint;
     }
 
-    int produceMaximumGeodes(State state) {
-      // Debug.printlnAndWaitForInput("== Minute %d ==\n%s", 24 - state.timeRemaining() + 1, state);
-      Integer result = cache.get(state);
+    Result produceMaximumGeodes(State state) {
+      // Debug.printlnAndWaitForInput("== Minute %d ==\n%s", 24 -
+      // state.timeRemaining() + 1, state);
+      Result result = cache.get(state);
       if (result != null) {
         return result;
       }
       if (state.timeRemaining() <= 2) {
-        result = 0;
+        result = new Result(Map.of(), 0, List.of(state));
       } else {
         // For each type of robot, check a) do we want to keep building this robot and
         // b) when can we build it next.
@@ -68,16 +117,21 @@ public class NotEnoughMinerals {
         result = nextRobots.entrySet().stream()
             .filter(e -> e.getValue() < state.timeRemaining() - 1)
             .sorted((e1, e2) -> Integer.compare(e2.getKey().ordinal(), e1.getKey().ordinal()))
-            .mapToInt(robotToBuild -> {
+            .map(robotToBuild -> {
               int lifetimeGeodeProducedByNewRobot = robotToBuild.getKey() == Resource.GEODE
                   ? state.timeRemaining() - robotToBuild.getValue() - 1
                   : 0;
               // if (lifetimeGeodeProducedByNewRobot > 0) {
-              //   Debug.printlnAndWaitForInput("Building a geode robot that will produce %d geodes", lifetimeGeodeProducedByNewRobot);
+              // Debug.printlnAndWaitForInput("Building a geode robot that will produce %d
+              // geodes", lifetimeGeodeProducedByNewRobot);
               // }
-              State fastForward = fastForward(state, robotToBuild.getKey(), robotToBuild.getValue() + 1);
-              return lifetimeGeodeProducedByNewRobot + produceMaximumGeodes(fastForward);
-            }).max().orElse(0);
+              State fastForward = fastForward(state, robotToBuild.getKey(), robotToBuild.getValue());
+              Result fastForwardResult = produceMaximumGeodes(fastForward);
+              return fastForwardResult.update(state.timeRemaining() - robotToBuild.getValue(), robotToBuild.getKey(),
+                  lifetimeGeodeProducedByNewRobot, fastForward);
+            })
+            .sorted((r1, r2) -> Integer.compare(r2.geodeProduced(), r1.geodeProduced()))
+            .findFirst().orElse(new Result(Map.of(), 0, List.of(state)));
       }
 
       cache.put(state, result);
@@ -120,16 +174,16 @@ public class NotEnoughMinerals {
     int minutesUntilRobotCanBeBuilt(State state, Resource type) {
       return blueprint.recipes().get(type).cost().entrySet().stream()
           .mapToInt(cost -> {
-            int productionRate = state.robots().get()[cost.getKey().ordinal()];
-            int currentStock = state.consumables().get()[cost.getKey().ordinal()];
-            int required = cost.getValue();
-            if (currentStock >= required) {
-              return 0;
-            }
+            double productionRate = state.robots().get()[cost.getKey().ordinal()];
+            double currentStock = state.consumables().get()[cost.getKey().ordinal()];
+            double required = cost.getValue();
+            // if (currentStock >= required) {
+            //   return 0;
+            // }
             if (productionRate == 0) {
               return Integer.MAX_VALUE;
             }
-            return (required - currentStock) / productionRate;
+            return (int) Math.ceil((required - currentStock) / productionRate);
           })
           .max()
           .orElse(Integer.MAX_VALUE);
@@ -137,11 +191,11 @@ public class NotEnoughMinerals {
 
     State fastForward(State state, Resource robotToBuild, int minutes) {
       IntArray wrappedResources = state.consumables().copy();
-      int [] resources = wrappedResources.get();
+      int[] resources = wrappedResources.get();
 
-      // First - produce resources from existing robots for N minutes.
+      // First - produce resources from existing robots for N+1 (enough to start creating the robot and then one more minute) minutes.
       for (int i = 0; i < 3; i++) {
-        resources[i] = resources[i] + (minutes * state.robots().get()[i]);
+        resources[i] = resources[i] + ((minutes + 1) * state.robots().get()[i]);
       }
 
       // Second - consume resources to start building a new robot.
@@ -156,7 +210,7 @@ public class NotEnoughMinerals {
         robots.get()[robotToBuild.ordinal()]++;
       }
 
-      return new State(robots, wrappedResources, state.timeRemaining() - minutes);
+      return new State(robots, wrappedResources, state.timeRemaining() - minutes - 1);
     }
   }
 

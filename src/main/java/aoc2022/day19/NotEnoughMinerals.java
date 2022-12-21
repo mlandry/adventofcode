@@ -47,7 +47,7 @@ public class NotEnoughMinerals {
       }
 
       if (state.timeRemaining() < 1) {
-        result = 0;
+        return state.resources().get(Resource.GEODE);
       } else {
         // Check if we can build any robots and also consider the state where we don't
         // build any robots (save up resources).

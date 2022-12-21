@@ -151,21 +151,6 @@ public class ProboscideaVolcanium {
       }
       return maximum;
     }
-
-    Set<List<ValveSequence>> findAllNonOverlappingSequencePairs(Set<ValveSequence> sequences) {
-      int totalValves = valves.size();
-      return sequences.stream()
-          .map(s -> {
-            Debug.printlnEveryN(1000, "computing...");
-            return s;
-          })
-          .flatMap(s1 -> sequences.stream()
-              .filter(s2 -> s1 != s2)
-              .filter(s2 -> s2.opened().size() <= totalValves - s1.opened().size())
-              .filter(s2 -> s2.disjoint(s1))
-              .map(s2 -> List.of(s1, s2)))
-          .collect(Collectors.toSet());
-    }
   }
 
   static record State(String current, Set<String> opened, int timeRemaining) {

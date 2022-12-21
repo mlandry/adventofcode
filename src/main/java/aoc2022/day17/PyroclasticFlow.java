@@ -176,6 +176,7 @@ public class PyroclasticFlow {
       System.out.println(String.format(fmt, args));
     }
 
+    @SuppressWarnings("unused")
     void print(Rock shape, Point position) {
       if (!DEBUG) {
         return;

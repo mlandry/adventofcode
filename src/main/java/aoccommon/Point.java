@@ -2,24 +2,18 @@ package aoccommon;
 
 import java.util.Arrays;
 
-public final class Point {
-
-  private final int[] coordinates;
-
-  private Point(int[] coordinates) {
-    this.coordinates = coordinates;
-  }
+public final record Point(IntArray coordinates) {
 
   public static Point of(int... coordinates) {
-    return new Point(coordinates);
+    return new Point(IntArray.of(coordinates));
   }
 
   public static Point parse(String csv) {
-    return new Point(Arrays.stream(csv.split(",")).mapToInt(Integer::parseInt).toArray());
+    return new Point(IntArray.wrap(Arrays.stream(csv.split(",")).mapToInt(Integer::parseInt).toArray()));
   }
 
   public Point copy() {
-    return new Point(Arrays.copyOf(coordinates, coordinates.length));
+    return new Point(coordinates.copy());
   }
 
   public int getX() {
@@ -35,24 +29,6 @@ public final class Point {
   }
 
   public int getN(int n) {
-    return coordinates[n];
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (!(other instanceof Point)) {
-      return false;
-    }
-    return Arrays.equals(coordinates, ((Point) other).coordinates);
-  }
-
-  @Override
-  public int hashCode() {
-    return Arrays.hashCode(coordinates);
-  }
-
-  @Override
-  public String toString() {
-    return Arrays.toString(coordinates);
+    return coordinates.get()[n];
   }
 }

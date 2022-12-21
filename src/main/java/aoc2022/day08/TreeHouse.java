@@ -1,6 +1,5 @@
 package aoc2022.day08;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;

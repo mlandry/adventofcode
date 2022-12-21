@@ -1,6 +1,7 @@
 package aoc2022.day19;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,27 +14,30 @@ import java.util.stream.Stream;
 
 import aoccommon.Debug;
 import aoccommon.InputHelper;
+import aoccommon.IntArray;
 
 /** Solution for {@link https://adventofcode.com/2022/day/19}. */
 public class NotEnoughMinerals {
 
   private static final String INPUT = "aoc2022/day19/example.txt";
+
   private final static State START = new State(
-      Arrays.stream(Resource.values()).filter(r -> r != Resource.GEODE)
-          .collect(Collectors.toMap(r -> r, r -> r == Resource.ORE ? 1 : 0)),
-      Arrays.stream(Resource.values()).filter(r -> r != Resource.GEODE).collect(Collectors.toMap(r -> r, r -> 0)),
+      IntArray.of(1, 0, 0),
+      IntArray.of(0, 0, 0),
       24);
 
   public static void main(String[] args) throws Exception {
-    //Debug.enablePrint();
+    Debug.enablePrint();
     List<Blueprint> blueprints = InputHelper.linesFromResource(INPUT)
         .map(Blueprint::parse)
         .collect(Collectors.toList());
 
-        Factory factory = new Factory(blueprints.get(0));
+    Factory factory = new Factory(blueprints.get(0));
+    Debug.startTimer("main");
     System.out.println(factory.produceMaximumGeodes(START));
     factory.cache.entrySet().stream().filter(e -> e.getKey().timeRemaining() == 24).forEach(System.out::println);
     System.out.println(new Factory(blueprints.get(1)).produceMaximumGeodes(START));
+    Debug.endTimer("main");
   }
 
   private static class Factory {
@@ -47,7 +51,7 @@ public class NotEnoughMinerals {
     }
 
     int produceMaximumGeodes(State state) {
-      Debug.printlnAndWaitForInput("== Minute %d ==\n%s", 24 - state.timeRemaining() + 1, state);
+      // Debug.printlnAndWaitForInput("== Minute %d ==\n%s", 24 - state.timeRemaining() + 1, state);
       Integer result = cache.get(state);
       if (result != null) {
         return result;
@@ -68,9 +72,9 @@ public class NotEnoughMinerals {
               int lifetimeGeodeProducedByNewRobot = robotToBuild.getKey() == Resource.GEODE
                   ? state.timeRemaining() - robotToBuild.getValue() - 1
                   : 0;
-              if (lifetimeGeodeProducedByNewRobot > 0) {
-                Debug.printlnAndWaitForInput("Building a geode robot that will produce %d geodes", lifetimeGeodeProducedByNewRobot);
-              }
+              // if (lifetimeGeodeProducedByNewRobot > 0) {
+              //   Debug.printlnAndWaitForInput("Building a geode robot that will produce %d geodes", lifetimeGeodeProducedByNewRobot);
+              // }
               State fastForward = fastForward(state, robotToBuild.getKey(), robotToBuild.getValue() + 1);
               return lifetimeGeodeProducedByNewRobot + produceMaximumGeodes(fastForward);
             }).max().orElse(0);
@@ -90,8 +94,8 @@ public class NotEnoughMinerals {
       // Optimization - if we're already producing enough of this resource to build
       // any possible robot, don't bother building more. Consider both on any
       // individual turn as well as the total possible production with current stock.
-      int robotsCreatingResource = state.robots().get(type);
-      int currentStockOfResource = state.consumables().get(type);
+      int robotsCreatingResource = state.robots().get()[type.ordinal()];
+      int currentStockOfResource = state.consumables().get()[type.ordinal()];
       int totalPossibleProduction = robotsCreatingResource * state.timeRemaining();
 
       int maximumResourceRequiredForBuild = blueprint.recipes().values().stream()
@@ -116,8 +120,8 @@ public class NotEnoughMinerals {
     int minutesUntilRobotCanBeBuilt(State state, Resource type) {
       return blueprint.recipes().get(type).cost().entrySet().stream()
           .mapToInt(cost -> {
-            int productionRate = state.robots().get(cost.getKey());
-            int currentStock = state.consumables().get(cost.getKey());
+            int productionRate = state.robots().get()[cost.getKey().ordinal()];
+            int currentStock = state.consumables().get()[cost.getKey().ordinal()];
             int required = cost.getValue();
             if (currentStock >= required) {
               return 0;
@@ -132,34 +136,34 @@ public class NotEnoughMinerals {
     }
 
     State fastForward(State state, Resource robotToBuild, int minutes) {
-      Map<Resource, Integer> resources = new HashMap<>(state.consumables());
+      IntArray wrappedResources = state.consumables().copy();
+      int [] resources = wrappedResources.get();
 
       // First - produce resources from existing robots for N minutes.
-      state.robots().entrySet()
-          .forEach(robots -> resources.compute(robots.getKey(), (k, v) -> v + minutes * robots.getValue()));
+      for (int i = 0; i < 3; i++) {
+        resources[i] = resources[i] + (minutes * state.robots().get()[i]);
+      }
 
       // Second - consume resources to start building a new robot.
       blueprint.recipes().get(robotToBuild).cost().entrySet()
-          .forEach(cost -> resources.compute(cost.getKey(), (k, v) -> v - cost.getValue()));
+          .forEach(cost -> resources[cost.getKey().ordinal()] = resources[cost.getKey().ordinal()] - cost.getValue());
 
       // Finally - add the newly constructed robot to the set of robots.
-      Map<Resource, Integer> robots = state.robots();
+      IntArray robots = state.robots();
       // Exclude GEODE robots as they are accounted outside of the state.
       if (robotToBuild != Resource.GEODE) {
-        robots = state.robots().entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> robotToBuild == e.getKey() ? e.getValue() + 1 : e.getValue()));
+        robots = robots.copy();
+        robots.get()[robotToBuild.ordinal()]++;
       }
 
-      return new State(robots, resources, state.timeRemaining() - minutes);
+      return new State(robots, wrappedResources, state.timeRemaining() - minutes);
     }
   }
 
   // State for memoization. Note robot and consumable totals don't not include
   // geodes to cut down on the number of states.
   // A geode robot is forward-counted as soon as it is created.
-  private static record State(Map<Resource, Integer> robots, Map<Resource, Integer> consumables, int timeRemaining) {
+  private static record State(IntArray robots, IntArray consumables, int timeRemaining) {
   }
 
   private static enum Resource {

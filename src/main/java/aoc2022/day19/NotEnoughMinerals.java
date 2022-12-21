@@ -20,7 +20,7 @@ import aoccommon.IntArray;
 /** Solution for {@link https://adventofcode.com/2022/day/19}. */
 public class NotEnoughMinerals {
 
-  private static final String INPUT = "aoc2022/day19/example.txt";
+  private static final String INPUT = "aoc2022/day19/input.txt";
 
   private final static State START = new State(
       IntArray.of(1, 0, 0),
@@ -29,20 +29,23 @@ public class NotEnoughMinerals {
 
   public static void main(String[] args) throws Exception {
     Debug.enablePrint();
+    Debug.startTimer("parsing");
     List<Blueprint> blueprints = InputHelper.linesFromResource(INPUT)
         .map(Blueprint::parse)
         .collect(Collectors.toList());
+    Debug.endTimer("parsing");
 
-    Factory factory = new Factory(blueprints.get(1));
-    Result result = factory.produceMaximumGeodes(START);
-    Debug.startTimer("main");
-    replay(blueprints.get(1), result);
-    System.out.println(result.states());
-    // factory.cache.entrySet().stream().filter(e -> e.getKey().timeRemaining() == 24).forEach(System.out::println);
-    // System.out.println(new Factory(blueprints.get(1)).produceMaximumGeodes(START));
-    Debug.endTimer("main");
+    Debug.startTimer("part1");
+    int qualityLevelSum = blueprints.stream()
+        .map(Factory::new)
+        .mapToInt(factory -> factory.blueprint.id() * factory.produceMaximumGeodes(START))
+        .sum();
+    System.out.println("Part 1: " + qualityLevelSum);
+
+    Debug.endTimer("part1");
   }
 
+  @SuppressWarnings("unused")
   private static void replay(Blueprint blueprint, Result result) {
     int[] robots = new int[]{1, 0, 0, 0};
     int[] resources = new int[4];
@@ -78,6 +81,7 @@ public class NotEnoughMinerals {
   }
 
   // Temporary data structure for debugging.
+  @SuppressWarnings("unused")
   private static record Result(Map<Integer, Resource> robotTimestamps, int geodeProduced, List<State> states) {
     Result update(int timeRemaining, Resource robotCreated, int additionalGeode, State state) {
       Map<Integer, Resource> copy = new HashMap<>(robotTimestamps);
@@ -92,21 +96,19 @@ public class NotEnoughMinerals {
     private final Blueprint blueprint;
 
     // Memoized cache of state -> produced geodes.
-    private final Map<State, Result> cache = new HashMap<>();
+    private final Map<State, Integer> cache = new HashMap<>();
 
     Factory(Blueprint blueprint) {
       this.blueprint = blueprint;
     }
 
-    Result produceMaximumGeodes(State state) {
-      // Debug.printlnAndWaitForInput("== Minute %d ==\n%s", 24 -
-      // state.timeRemaining() + 1, state);
-      Result result = cache.get(state);
+    int produceMaximumGeodes(State state) {
+      Integer result = cache.get(state);
       if (result != null) {
         return result;
       }
       if (state.timeRemaining() <= 2) {
-        result = new Result(Map.of(), 0, List.of(state));
+        result = 0;
       } else {
         // For each type of robot, check a) do we want to keep building this robot and
         // b) when can we build it next.
@@ -114,24 +116,19 @@ public class NotEnoughMinerals {
             .filter(r -> shouldKeepBuildingRobot(state, r))
             .collect(Collectors.toMap(r -> r, r -> minutesUntilRobotCanBeBuilt(state, r)));
 
+        // For each possibile robot, fast forward to the state after it's been built and recurse.
         result = nextRobots.entrySet().stream()
             .filter(e -> e.getValue() < state.timeRemaining() - 1)
             .sorted((e1, e2) -> Integer.compare(e2.getKey().ordinal(), e1.getKey().ordinal()))
-            .map(robotToBuild -> {
+            .mapToInt(robotToBuild -> {
               int lifetimeGeodeProducedByNewRobot = robotToBuild.getKey() == Resource.GEODE
                   ? state.timeRemaining() - robotToBuild.getValue() - 1
                   : 0;
-              // if (lifetimeGeodeProducedByNewRobot > 0) {
-              // Debug.printlnAndWaitForInput("Building a geode robot that will produce %d
-              // geodes", lifetimeGeodeProducedByNewRobot);
-              // }
               State fastForward = fastForward(state, robotToBuild.getKey(), robotToBuild.getValue());
-              Result fastForwardResult = produceMaximumGeodes(fastForward);
-              return fastForwardResult.update(state.timeRemaining() - robotToBuild.getValue(), robotToBuild.getKey(),
-                  lifetimeGeodeProducedByNewRobot, fastForward);
+              return lifetimeGeodeProducedByNewRobot + produceMaximumGeodes(fastForward);
             })
-            .sorted((r1, r2) -> Integer.compare(r2.geodeProduced(), r1.geodeProduced()))
-            .findFirst().orElse(new Result(Map.of(), 0, List.of(state)));
+            .max()
+            .orElse(0);
       }
 
       cache.put(state, result);

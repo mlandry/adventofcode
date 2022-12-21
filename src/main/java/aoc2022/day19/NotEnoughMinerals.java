@@ -16,10 +16,11 @@ import aoccommon.InputHelper;
 /** Solution for {@link https://adventofcode.com/2022/day/19}. */
 public class NotEnoughMinerals {
 
-  private static final String INPUT = "aoc2022/day19/input.txt";
+  private static final String INPUT = "aoc2022/day19/example.txt";
   private final static State START = new State(
-      Arrays.stream(Resource.values()).collect(Collectors.toMap(r -> r, r -> r == Resource.ORE ? 1 : 0)),
-      Arrays.stream(Resource.values()).collect(Collectors.toMap(r -> r, r -> 0)),
+      Arrays.stream(Resource.values()).filter(r -> r != Resource.GEODE)
+          .collect(Collectors.toMap(r -> r, r -> r == Resource.ORE ? 1 : 0)),
+      Arrays.stream(Resource.values()).filter(r -> r != Resource.GEODE).collect(Collectors.toMap(r -> r, r -> 0)),
       24);
 
   public static void main(String[] args) throws Exception {
@@ -47,35 +48,62 @@ public class NotEnoughMinerals {
       }
 
       if (state.timeRemaining() < 1) {
-        return state.resources().get(Resource.GEODE);
+        return 0;
       } else {
         // Check if we can build any robots and also consider the state where we don't
         // build any robots (save up resources).
-        Stream<Optional<Resource>> possibleRobotStates = Stream.concat(
+        Stream<Optional<Resource>> robotPossibilities = Stream.concat(
             Stream.of(Optional.empty()),
-            Arrays.stream(Resource.values()).filter(r -> canBuildRobot(state, r))
+            Arrays.stream(Resource.values()).filter(r -> shouldBuildRobot(state, r))
                 .map(Optional::of));
 
-        Stream<State> nextStates = possibleRobotStates.map(robotToBuild -> tick(state, robotToBuild));
-
-        result = nextStates.mapToInt(this::produceMaximumGeodes).max().orElse(0);
+        result = robotPossibilities.mapToInt(robotToBuild -> {
+          int lifetimeGeodeProducedByNewRobot = robotToBuild.filter(r -> r == Resource.GEODE)
+              .map(r -> state.timeRemaining() - 1).orElse(0);
+          return lifetimeGeodeProducedByNewRobot + produceMaximumGeodes(tick(state, robotToBuild));
+        }).max().orElse(0);
       }
 
       cache.put(state, result);
       return result;
     }
 
-    boolean canBuildRobot(State state, Resource type) {
+    boolean shouldBuildRobot(State state, Resource type) {
       if (state.timeRemaining() <= 1) {
         return false;
       }
+
+      if (type != Resource.GEODE) {
+        // Optimization - if we're already producing enough of this resource to build
+        // any possible robot, don't bother building more.
+        int robotsCreatingResource = state.robots().get(type);
+        int currentStockOfResource = state.consumables().get(type);
+        int totalPossibleProduction = robotsCreatingResource * state.timeRemaining();
+
+        int maximumResourceRequiredForBuild = blueprint.recipes().values().stream()
+            .map(RobotRecipe::cost)
+            .map(Map::entrySet)
+            .flatMap(Set::stream)
+            .filter(e -> e.getKey() == type)
+            .mapToInt(Map.Entry::getValue)
+            .max()
+            .orElse(0);
+        int totalMaxRequired = maximumResourceRequiredForBuild * state.timeRemaining();
+
+        if (robotsCreatingResource >= maximumResourceRequiredForBuild) {
+          return false;
+        }
+        if (totalPossibleProduction + currentStockOfResource > totalMaxRequired) {
+          return false;
+        }
+      }
+
       RobotRecipe recipe = blueprint.recipes().get(type);
-      return recipe.cost().entrySet().stream()
-          .allMatch(e -> state.resources().get(e.getKey()) >= e.getValue());
+      return recipe.cost().entrySet().stream().allMatch(e -> state.consumables().get(e.getKey()) >= e.getValue());
     }
 
     State tick(State state, Optional<Resource> robotToBuild) {
-      Map<Resource, Integer> resources = new HashMap<>(state.resources());
+      Map<Resource, Integer> resources = new HashMap<>(state.consumables());
 
       // First - consume resources to start building a new robot.
       if (robotToBuild.isPresent()) {
@@ -87,18 +115,25 @@ public class NotEnoughMinerals {
       state.robots().entrySet().forEach(robots -> resources.compute(robots.getKey(), (k, v) -> v + robots.getValue()));
 
       // Finally - add the newly constructed robot to the set of robots.
-      Map<Resource, Integer> robots = state.robots().entrySet().stream()
-          .collect(Collectors.toMap(
-              Map.Entry::getKey,
-              e -> robotToBuild.filter(r -> r == e.getKey())
-                  .map(r -> e.getValue() + 1)
-                  .orElse(e.getValue())));
+      Map<Resource, Integer> robots = state.robots();
+      // Exclude GEODE robots as they are accounted outside of the state.
+      if (robotToBuild.filter(r -> r != Resource.GEODE).isPresent()) {
+        robots = state.robots().entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> robotToBuild.filter(r -> r == e.getKey())
+                    .map(r -> e.getValue() + 1)
+                    .orElse(e.getValue())));
+      }
 
       return new State(robots, resources, state.timeRemaining() - 1);
     }
   }
 
-  private static record State(Map<Resource, Integer> robots, Map<Resource, Integer> resources, int timeRemaining) {
+  // State for memoization. Note robot and consumable totals don't not include
+  // geodes to cut down on the number of states.
+  // A geode robot is forward-counted as soon as it is created.
+  private static record State(Map<Resource, Integer> robots, Map<Resource, Integer> consumables, int timeRemaining) {
   }
 
   private static enum Resource {

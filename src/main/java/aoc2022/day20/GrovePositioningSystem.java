@@ -2,8 +2,10 @@ package aoc2022.day20;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import aoccommon.Debug;
@@ -16,8 +18,45 @@ public class GrovePositioningSystem {
 
   public static void main(String [] args) throws Exception {
     // Debug.enablePrint();
+    // Debug.enableTimers();
+
+    Debug.startTimer("parse");
     List<String> lines = InputHelper.linesFromResource(INPUT).collect(Collectors.toList());
 
+    Node head = parseToCircularlyLinkedList(lines);
+    Debug.println("Initial arrangement:");
+    print(head);
+    Debug.endTimer("parse");
+
+    Debug.startTimer("mix");
+    int length = length(head);
+    List<Node> originalNodeOrder = nodeStream(head).collect(Collectors.toList());
+    head = mix(head, originalNodeOrder, length);
+    Debug.endTimer("mix");
+
+    System.out.println("Part 1: " + computeKeyValueSum(head, length));
+
+    // Reparse the unmixed list.
+    head = parseToCircularlyLinkedList(lines);
+    originalNodeOrder = nodeStream(head).collect(Collectors.toList());
+    // Multiply all values by the decryption key.
+    nodeStream(head).forEach(node -> node.updateValue(v -> v * 811589153L));
+    Debug.println("Initial arrangement:");
+    print(head);
+
+    // Mix ten times.
+    for (int i = 0; i < 10; i++) {
+      Debug.startTimer("mix-" + (i + 1));
+      head = mix(head, originalNodeOrder, length);
+      Debug.println("After %d rounds of mixing:", i + 1);
+      print(head);
+      Debug.endTimer("mix-" + (i + 1));
+    }
+
+    System.out.println("Part 2: " + computeKeyValueSum(head, length));
+  }
+
+  private static Node parseToCircularlyLinkedList(List<String> lines) {
     Node prev = null;
     Node head = null;
     Iterator<String> input = lines.iterator();
@@ -35,10 +74,11 @@ public class GrovePositioningSystem {
     // Connect tail to head to make it a circular linked list.
     head.prev = prev;
     prev.next = head;
-    Debug.println("Initial arrangement:");
-    print(head);
+    return head;
+  }
 
-    Iterator<Node> nodeIter = nodeStream(head).iterator();
+  private static Node mix(Node head, List<Node> originalNodeOrder, int length) {
+    Iterator<Node> nodeIter = originalNodeOrder.iterator();
     while (nodeIter.hasNext()) {
       Node current = nodeIter.next();
       if (current.value == 0) {
@@ -52,57 +92,60 @@ public class GrovePositioningSystem {
         head = current.next;
       }
 
-      Node spot = current;
+      // Current node is disconnected, so calculate the shift mod length - 1.
+      int shift = (int) (Math.abs(current.value) % (long) (length - 1));
+      if (current.value < 0) {
+        shift = 0 - shift;
+      }
+      Node spot = get(current, shift);
       if (current.value > 0) {
-        for (int j = 0; j < current.value; j++) {
-          spot = spot.next;
-        }
-        Debug.println("%d moves between %d and %d:", current.value, spot.value, spot.next.value);
+        // Debug.println("%d moves between %d and %d:", current.value, spot.value, spot.next.value);
         spot.next.prev = current;
         current.next = spot.next;
         spot.next = current;
         current.prev = spot;
-        print(head);
+        // print(head);
         continue;
       }
-
-      for (int j = 0; j > current.value; j--) {
-        spot = spot.prev;
-      }
-      Debug.println("%d moves between %d and %d:", current.value, spot.prev.value, spot.value);
+      // Debug.println("%d moves between %d and %d:", current.value, spot.prev.value, spot.value);
       spot.prev.next = current;
       current.prev = spot.prev;
       spot.prev = current;
       current.next = spot;
-      print(head);
+      // print(head);
     }
+    return head;
+  }
 
-    int length = length(head);
+  private static long computeKeyValueSum(Node head, int length) {
     int zeroIndex = indexOf(head, 0);
-
-    int value1000 = get(head, zeroIndex + 1000 % length).value();
-    int value2000 = get(head, zeroIndex + 2000 % length).value();
-    int value3000 = get(head, zeroIndex + 3000 % length).value();
-
-    System.out.println("Part 1: " + (value1000 + value2000 + value3000));
+    return IntStream.of(1000, 2000, 3000)
+        .map(i -> zeroIndex + i % length)
+        .mapToObj(i -> get(head, i))
+        .mapToLong(Node::value)
+        .sum();
   }
 
   private static class Node {
-    private final int value;
+    private long value;
 
     private Node prev;
     private Node next;
 
-    Node(int value) {
+    Node(long value) {
       this.value = value;
     }
 
     static Node parse(String line) {
-      return new Node(Integer.parseInt(line));
+      return new Node(Long.parseLong(line));
     }
 
-    int value() {
+    long value() {
       return value;
+    }
+
+    void updateValue(Function<Long, Long> func) {
+      this.value = func.apply(value);
     }
 
     @Override
@@ -121,12 +164,12 @@ public class GrovePositioningSystem {
     return builder.build();
   }
 
-  private static IntStream valueStream(Node head) {
-    return nodeStream(head).mapToInt(Node::value);
+  private static LongStream valueStream(Node head) {
+    return nodeStream(head).mapToLong(Node::value);
   }
 
   private static void print(Node head) {
-    Debug.println(valueStream(head).mapToObj(Integer::toString).collect(Collectors.joining(", ")));
+    Debug.println(valueStream(head).mapToObj(Long::toString).collect(Collectors.joining(", ")));
   }
 
   private static int length(Node head) {
@@ -139,7 +182,7 @@ public class GrovePositioningSystem {
     return len;
   }
 
-  private static int indexOf(Node head, int value) {
+  private static int indexOf(Node head, long value) {
     Node current = head;
     int i = 0;
     do {
@@ -154,9 +197,10 @@ public class GrovePositioningSystem {
 
   private static Node get(Node head, int index) {
     Node current = head;
-    for (int i = 0; i < index; i++) {
-      current = current.next;
+    for (int i = 0; i < Math.abs(index); i++) {
+      current = index > 0 ? current.next : current.prev;
     }
+
     return current;
   }
 }

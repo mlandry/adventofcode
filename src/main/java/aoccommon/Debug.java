@@ -5,24 +5,29 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class Debug {
-  private static boolean ENABLED = false;
+  private static boolean LOGGING_ENABLED = false;
+  private static boolean TIMERS_ENABLED = false;
   private static int COUNTER = 0;
 
   private static final Map<String, Long> TIMERS = new HashMap<>();
 
   public static void enablePrint() {
-    ENABLED = true;
+    LOGGING_ENABLED = true;
+  }
+
+  public static void enableTimers() {
+    TIMERS_ENABLED = true;
   }
 
   public static void println(String fmt, Object... args) {
-    if (!ENABLED) {
+    if (!LOGGING_ENABLED) {
       return;
     }
     System.out.println(String.format(fmt, args));
   }
 
   public static void printlnAndWaitForInput(String fmt, Object... args) {
-    if (!ENABLED) {
+    if (!LOGGING_ENABLED) {
       return;
     }
     println(fmt, args);
@@ -34,7 +39,7 @@ public final class Debug {
   }
 
   public static void printlnEveryN(int n, String fmt, Object ... args) {
-    if (!ENABLED) {
+    if (!LOGGING_ENABLED) {
       return;
     }
     if (COUNTER++ % n == 0) {
@@ -43,11 +48,17 @@ public final class Debug {
   }
 
   public static void startTimer(String name) {
+    if (!TIMERS_ENABLED) {
+      return;
+    }
     TIMERS.put(name, System.currentTimeMillis());
   }
 
   public static void endTimer(String name) {
+    if (!TIMERS_ENABLED) {
+      return;
+    }
     long elapsed = System.currentTimeMillis() - TIMERS.remove(name);
-    println("[%s]: %d", name, elapsed);
+    System.out.println(String.format("[%s]: %d", name, elapsed));
   }
 }

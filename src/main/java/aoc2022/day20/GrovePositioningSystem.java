@@ -1,6 +1,7 @@
 package aoc2022.day20;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -11,15 +12,15 @@ import aoccommon.InputHelper;
 /** Solution for {@link https://adventofcode.com/2022/day/20}. */
 public class GrovePositioningSystem {
 
-  private static final String INPUT = "aoc2022/day20/example.txt";
+  private static final String INPUT = "aoc2022/day20/input.txt";
 
   public static void main(String [] args) throws Exception {
-    Debug.enablePrint();
-    
+    // Debug.enablePrint();
+    List<String> lines = InputHelper.linesFromResource(INPUT).collect(Collectors.toList());
+
     Node prev = null;
     Node head = null;
-    Iterator<String> input = InputHelper.linesFromResource(INPUT).iterator();
-    int length = 0;
+    Iterator<String> input = lines.iterator();
     while (input.hasNext()) {
       Node node = Node.parse(input.next());
       if (head == null) {
@@ -30,7 +31,6 @@ public class GrovePositioningSystem {
         prev.next = node;
       }
       prev = node;
-      length++;
     }
     // Connect tail to head to make it a circular linked list.
     head.prev = prev;
@@ -76,6 +76,15 @@ public class GrovePositioningSystem {
       current.next = spot;
       print(head);
     }
+
+    int length = length(head);
+    int zeroIndex = indexOf(head, 0);
+
+    int value1000 = get(head, zeroIndex + 1000 % length).value();
+    int value2000 = get(head, zeroIndex + 2000 % length).value();
+    int value3000 = get(head, zeroIndex + 3000 % length).value();
+
+    System.out.println("Part 1: " + (value1000 + value2000 + value3000));
   }
 
   private static class Node {
@@ -118,5 +127,36 @@ public class GrovePositioningSystem {
 
   private static void print(Node head) {
     Debug.println(valueStream(head).mapToObj(Integer::toString).collect(Collectors.joining(", ")));
+  }
+
+  private static int length(Node head) {
+    Node current = head;
+    int len = 0;
+    do {
+      len++;
+      current = current.next;
+    } while (current != head);
+    return len;
+  }
+
+  private static int indexOf(Node head, int value) {
+    Node current = head;
+    int i = 0;
+    do {
+      if (current.value == value) {
+        return i;
+      }
+      i++;
+      current = current.next;
+    } while (current != head);
+    return -1;
+  }
+
+  private static Node get(Node head, int index) {
+    Node current = head;
+    for (int i = 0; i < index; i++) {
+      current = current.next;
+    }
+    return current;
   }
 }

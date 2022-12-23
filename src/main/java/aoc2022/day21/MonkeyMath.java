@@ -12,6 +12,8 @@ import aoccommon.InputHelper;
 public class MonkeyMath {
 
   private static final String INPUT = "aoc2022/day21/input.txt";
+  private static final String ROOT = "root";
+  private static final String HUMAN = "humn";
 
   public static void main(String[] args) throws Exception {
     Map<String, Monkey> monkeys = InputHelper.linesFromResource(INPUT)

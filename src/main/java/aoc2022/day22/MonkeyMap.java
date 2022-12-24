@@ -1,15 +1,22 @@
 package aoc2022.day22;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import aoccommon.InputHelper;
-import aoccommon.Point;
 
 /** Solution for {@link https://adventofcode.com/2022/day/22}. */
 public class MonkeyMap {
 
   private static final String INPUT = "aoc2022/day22/input.txt";
+
+  // TODO(maybe?): Make this generic to handle any folding cube shape rather than
+  // hard-coding.
+  private static final Supplier<CubeTeleporter> TELEPORTER = (sideLength) -> INPUT.contains("example" ? new ExampleCubeTeleporter(sideLength) : new InputCubeTeleporter(sideLength);
 
   private static enum Direction {
     RIGHT,
@@ -18,31 +25,43 @@ public class MonkeyMap {
     UP,
   }
 
-  private static class Board {
-    private final List<String> lines;
-    private final String instruction;
+  private static record Teleport(int row, int col, Direction direction) {
+  }
 
-    private int row = 0;
-    private int col = 0;
-    private Direction dir = Direction.RIGHT;
-    private int i = 0;
+  private static class Board {
+    final List<String> lines;
+    final String instruction;
+
+    int row = 0;
+    int col = 0;
+    Direction dir = Direction.RIGHT;
+    int i = 0;
 
     Board(List<String> lines, String instruction) {
       this.lines = lines;
       this.instruction = instruction;
-    }
-
-    static Board create(List<String> lines, String instruction) {
-      Board board = new Board(lines, instruction);
-      board.initialize();
-      return board;
-    }
-
-    void initialize() {
       row = 0;
       col = startOfRow(0);
       dir = Direction.RIGHT;
       i = 0;
+    }
+
+    Optional<Teleport> computeTeleport(int row, int col, Direction direction) {
+      if (!Character.isWhitespace(charAt(row, col))) {
+        return Optional.empty();
+      }
+      switch (dir) {
+        case RIGHT:
+          return Optional.of(new Teleport(row, startOfRow(row), dir));
+        case DOWN:
+          return Optional.of(new Teleport(startOfCol(col), col, dir));
+        case LEFT:
+          return Optional.of(new Teleport(row, endOfRow(row), dir));
+        case UP:
+          return Optional.of(new Teleport(endOfCol(col), col, dir));
+        default:
+          throw new IllegalStateException();
+      }
     }
 
     void navigate() {
@@ -61,50 +80,30 @@ public class MonkeyMap {
       }
     }
 
-    protected void walk(int steps) {
+    void walk(int steps) {
       for (int s = 0; s < steps; s++) {
-        int nextRow = row;
-        int nextCol = col;
-        switch (dir) {
-          case RIGHT:
-            nextCol++;
-            if (nextCol >= lines.get(row).length() || Character.isWhitespace(lines.get(row).charAt(nextCol))) {
-              nextCol = startOfRow(row);
-            }
-            break;
-          case DOWN:
-            nextRow++;
-            if (nextRow >= lines.size() || col >= lines.get(nextRow).length()
-                || Character.isWhitespace(lines.get(nextRow).charAt(col))) {
-              nextRow = startOfCol(col);
-            }
-            break;
-          case LEFT:
-            nextCol--;
-            if (nextCol < 0 || Character.isWhitespace(lines.get(row).charAt(nextCol))) {
-              nextCol = endOfRow(row);
-            }
-            break;
-          case UP:
-            nextRow--;
-            if (nextRow < 0 || col >= lines.get(nextRow).length()
-                || Character.isWhitespace(lines.get(nextRow).charAt(col))) {
-              nextRow = endOfCol(col);
-            }
-            break;
-          default:
-            throw new IllegalStateException();
+        int nextRow = dir == Direction.DOWN ? row + 1 : dir == Direction.UP ? row - 1 : row;
+        int nextCol = dir == Direction.RIGHT ? col + 1 : dir == Direction.LEFT ? col - 1 : col;
+
+        Optional<Teleport> teleport = computeTeleport(nextRow, nextCol, dir);
+        if (teleport.isPresent()) {
+          nextRow = teleport.get().row;
+          nextCol = teleport.get().col;
         }
-        if (lines.get(nextRow).charAt(nextCol) == '#') {
+
+        if (charAt(nextRow, nextCol) == '#') {
           break;
         }
 
         row = nextRow;
         col = nextCol;
+        if (teleport.isPresent()) {
+          dir = teleport.get().direction;
+        }
       }
     }
 
-    private void turn(char c) {
+    void turn(char c) {
       if (c == 'R') {
         dir = dir.values()[(dir.ordinal() + 1) % dir.values().length];
       } else if (dir.ordinal() == 0) {
@@ -114,15 +113,15 @@ public class MonkeyMap {
       }
     }
 
-    private int startOfRow(int row) {
+    int startOfRow(int row) {
       return Math.min(lines.get(row).indexOf('#'), lines.get(row).indexOf('.'));
     }
 
-    private int endOfRow(int row) {
+    int endOfRow(int row) {
       return Math.max(lines.get(row).lastIndexOf('#'), lines.get(row).lastIndexOf('.'));
     }
 
-    private int startOfCol(int col) {
+    int startOfCol(int col) {
       for (int r = 0; r < lines.size(); r++) {
         String line = lines.get(r);
         if (col >= line.length()) {
@@ -136,7 +135,7 @@ public class MonkeyMap {
       throw new IllegalStateException("Couldn't find start of  col " + col);
     }
 
-    private int endOfCol(int col) {
+    int endOfCol(int col) {
       for (int r = lines.size() - 1; r >= 0; r--) {
         String line = lines.get(r);
         if (col >= line.length()) {
@@ -149,27 +148,94 @@ public class MonkeyMap {
       }
       throw new IllegalStateException("Couldn't find end of  col " + col);
     }
+
+    char charAt(int row, int col) {
+      if (row < 0 || col < 0 || row >= lines.size() || col >= lines.get(row).length()) {
+        return ' ';
+      }
+      return lines.get(row).charAt(col);
+    }
   }
 
-  private static class Cube extends Board {
-    Cube(List<String> lines, String instruction) {
-      super(lines, instruction);
+  private static long computeFinalPositionAndFacing(Board board) {
+    long row = board.row + 1;
+    long col = board.col + 1;
+    long facing = board.dir.ordinal();
+    return (row * 1000L) + (col * 4L) + facing;
+  }
+
+  private static abstract class CubeTeleporter {
+    final int sideLength;
+
+    CubeTeleporter(int sideLength) {
+      this.sideLength = sideLength;
     }
 
-    static Cube create(List<String> lines, String instruction) {
-      Cube cube = new Cube(lines, instruction);
-      cube.initialize();
-      return cube;
+    abstract Optional<Teleport> computeTeleport(int row, int col, Direction direction);
+  }
+
+  /**
+   * [ ][ ][T][ ]
+   * [K][L][F][ ]
+   * [ ][ ][B][R]
+   */
+  private static class ExampleCubeTeleporter extends CubeTeleporter {
+    ExampleCubeTeleporter(int sideLength) {
+      super(sideLength);
     }
 
     @Override
-    void initialize() {
-      super.initialize();
+    Optional<Teleport> computeTeleport(int row, int col, Direction direction) {
+      switch (direction) {
+        case RIGHT:
+          if (row < sideLength) {
+            if (col >= sideLength * 3) {
+              // Teleport from right edge of TOP to right edge of RIGHT, now going left.
+              return Optional.of(new Teleport(sideLength * 3 - row, sideLength * 4 - 1, Direction.LEFT));
+            }
+          } else if (row >= sideLength && row < sideLength * 2) {
+            if (col >= sideLength * 3) {
+              // Teleport from right edge of FRONT to top edge of RIGHT, now going down.
+              return Optional.of(new Teleport(sideLength * 2, sideLength * 3 + (sideLength * 2 - row), Direction.DOWN));
+            }
+          } else {
+            if (col >= sideLength * 4) {
+              // Teleport from right edge of RIGHT to right edge of TOP, now going left.
+              return Optional.of(new Teleport(sideLength * 3 - row, sideLength * 3, Direction.LEFT));
+            }
+          }
+        case DOWN:
+        case LEFT:
+        case UP:
+        default:
+          throw new IllegalArgumentException();
+      }
+      return Optional.empty();
     }
-    
-    @Override
-    protected void walk(int steps) {
+  }
 
+  /**
+   * [ ][#][#]
+   * [ ][#][ ]
+   * [#][#][ ]
+   * [#][ ][ ]
+   */
+  private static class InputCubeTeleporter extends CubeTeleporter {
+    InputCubeTeleporter(int sideLength) {
+      super(sideLength);
+    }
+
+    @Override
+    Optional<Teleport> computeTeleport(int row, int col, Direction direction) {
+      switch (direction) {
+        case RIGHT:
+        case DOWN:
+        case LEFT:
+        case UP:
+        default:
+          throw new IllegalArgumentException();
+      }
+      return Optional.empty();
     }
   }
 
@@ -179,13 +245,9 @@ public class MonkeyMap {
     String instruction = lines.get(lines.size() - 1);
 
     // Part 1.
-    Board board = Board.create(lines.subList(0, lines.size() - 2), instruction);
+    Board board = new Board(lines.subList(0, lines.size() - 2), instruction);
     board.navigate();
 
-    long row = board.row + 1;
-    long col = board.col + 1;
-    long facing = board.dir.ordinal();
-    long sum = (row * 1000L) + (col * 4L) + facing;
-    System.out.println("Part 1: " + sum);
+    System.out.println("Part 1: " + computeFinalPositionAndFacing(board));
   }
 }

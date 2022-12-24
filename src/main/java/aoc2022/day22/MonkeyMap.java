@@ -12,18 +12,10 @@ public class MonkeyMap {
   private static final String INPUT = "aoc2022/day22/input.txt";
 
   private static enum Direction {
-    RIGHT(1, 0),
-    DOWN(0, 1),
-    LEFT(-1, 0),
-    UP(0, -1);
-
-    private final int xd;
-    private final int yd;
-
-    Direction(int xd, int yd) {
-      this.xd = xd;
-      this.yd = yd;
-    }
+    RIGHT,
+    DOWN,
+    LEFT,
+    UP,
   }
 
   private static class Board {
@@ -53,27 +45,62 @@ public class MonkeyMap {
       i = 0;
     }
 
-    FinalPosition navigate() {
+    void navigate() {
       while (i < instruction.length()) {
         char c = instruction.charAt(i++);
         if (Character.isDigit(c)) {
           int steps = c - '0';
-          while (Character.isDigit(c = instruction.charAt(i))) {
+          while (i < instruction.length() && Character.isDigit(c = instruction.charAt(i))) {
             i++;
             steps = (steps * 10) + (c - '0');
           }
-
+          walk(steps);
         } else {
           turn(c);
         }
       }
     }
 
-    private void walk(int steps) {
+    protected void walk(int steps) {
       for (int s = 0; s < steps; s++) {
-        row = row + dir.yd;
-        col = col + dir.xd;
-        // Check for walls or off end of map.
+        int nextRow = row;
+        int nextCol = col;
+        switch (dir) {
+          case RIGHT:
+            nextCol++;
+            if (nextCol >= lines.get(row).length() || Character.isWhitespace(lines.get(row).charAt(nextCol))) {
+              nextCol = startOfRow(row);
+            }
+            break;
+          case DOWN:
+            nextRow++;
+            if (nextRow >= lines.size() || col >= lines.get(nextRow).length()
+                || Character.isWhitespace(lines.get(nextRow).charAt(col))) {
+              nextRow = startOfCol(col);
+            }
+            break;
+          case LEFT:
+            nextCol--;
+            if (nextCol < 0 || Character.isWhitespace(lines.get(row).charAt(nextCol))) {
+              nextCol = endOfRow(row);
+            }
+            break;
+          case UP:
+            nextRow--;
+            if (nextRow < 0 || col >= lines.get(nextRow).length()
+                || Character.isWhitespace(lines.get(nextRow).charAt(col))) {
+              nextRow = endOfCol(col);
+            }
+            break;
+          default:
+            throw new IllegalStateException();
+        }
+        if (lines.get(nextRow).charAt(nextCol) == '#') {
+          break;
+        }
+
+        row = nextRow;
+        col = nextCol;
       }
     }
 
@@ -90,15 +117,75 @@ public class MonkeyMap {
     private int startOfRow(int row) {
       return Math.min(lines.get(row).indexOf('#'), lines.get(row).indexOf('.'));
     }
+
+    private int endOfRow(int row) {
+      return Math.max(lines.get(row).lastIndexOf('#'), lines.get(row).lastIndexOf('.'));
+    }
+
+    private int startOfCol(int col) {
+      for (int r = 0; r < lines.size(); r++) {
+        String line = lines.get(r);
+        if (col >= line.length()) {
+          continue;
+        }
+        if (Character.isWhitespace(line.charAt(col))) {
+          continue;
+        }
+        return r;
+      }
+      throw new IllegalStateException("Couldn't find start of  col " + col);
+    }
+
+    private int endOfCol(int col) {
+      for (int r = lines.size() - 1; r >= 0; r--) {
+        String line = lines.get(r);
+        if (col >= line.length()) {
+          continue;
+        }
+        if (Character.isWhitespace(line.charAt(col))) {
+          continue;
+        }
+        return r;
+      }
+      throw new IllegalStateException("Couldn't find end of  col " + col);
+    }
   }
 
-  private static record FinalPosition(Point point, Direction direction) {
+  private static class Cube extends Board {
+    Cube(List<String> lines, String instruction) {
+      super(lines, instruction);
+    }
+
+    static Cube create(List<String> lines, String instruction) {
+      Cube cube = new Cube(lines, instruction);
+      cube.initialize();
+      return cube;
+    }
+
+    @Override
+    void initialize() {
+      super.initialize();
+    }
+    
+    @Override
+    protected void walk(int steps) {
+
+    }
   }
 
-  public static void main(String [] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     List<String> lines = InputHelper.linesFromResource(INPUT).collect(Collectors.toList());
 
     String instruction = lines.get(lines.size() - 1);
+
+    // Part 1.
     Board board = Board.create(lines.subList(0, lines.size() - 2), instruction);
+    board.navigate();
+
+    long row = board.row + 1;
+    long col = board.col + 1;
+    long facing = board.dir.ordinal();
+    long sum = (row * 1000L) + (col * 4L) + facing;
+    System.out.println("Part 1: " + sum);
   }
 }

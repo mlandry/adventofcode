@@ -17,6 +17,8 @@ public class MonkeyMap {
 
   private static final String INPUT = "aoc2022/day22/example.txt";
 
+  private static final boolean DEBUG = true;
+
   // TODO(maybe?): Make this generic to handle any folding cube shape rather than
   // hard-coding.
   private static final Function<Integer, CubeTeleporter> TELEPORTER = (sideLength) -> INPUT.contains("example")
@@ -29,6 +31,12 @@ public class MonkeyMap {
     LEFT,
     UP,
   }
+
+  private static final Map<Direction, Character> DIRECTION_CHARACTERS = Map.of(
+    Direction.RIGHT, '>',
+    Direction.DOWN, 'v',
+    Direction.LEFT, '<',
+    Direction.UP, '^');
 
   private static final Map<Direction, Direction> REVERSE = Map.of(
       Direction.RIGHT, Direction.LEFT,
@@ -77,6 +85,7 @@ public class MonkeyMap {
 
     void navigate() {
       while (i < instruction.length()) {
+        print();
         char c = instruction.charAt(i++);
         if (Character.isDigit(c)) {
           int steps = c - '0';
@@ -88,6 +97,7 @@ public class MonkeyMap {
         } else {
           turn(c);
         }
+        
       }
     }
 
@@ -110,17 +120,18 @@ public class MonkeyMap {
         col = nextCol;
         if (teleport.isPresent()) {
           dir = teleport.get().direction;
+          print();
         }
       }
     }
 
     void turn(char c) {
       if (c == 'R') {
-        dir = dir.values()[(dir.ordinal() + 1) % dir.values().length];
+        dir = Direction.values()[(dir.ordinal() + 1) % Direction.values().length];
       } else if (dir.ordinal() == 0) {
-        dir = dir.values()[dir.values().length - 1];
+        dir = Direction.values()[Direction.values().length - 1];
       } else {
-        dir = dir.values()[dir.ordinal() - 1];
+        dir = Direction.values()[dir.ordinal() - 1];
       }
     }
 
@@ -165,6 +176,25 @@ public class MonkeyMap {
         return ' ';
       }
       return lines.get(row).charAt(col);
+    }
+
+    void print() {
+      if (!DEBUG) {
+        return;
+      }
+      StringBuilder sb = new StringBuilder();
+      for (int r = 0; r < lines.size(); r++) {
+        String line = lines.get(r);
+        for (int c = 0; c < line.length(); c++) {
+          if (r == row && c == col) {
+            sb.append(DIRECTION_CHARACTERS.get(dir));
+          } else {
+            sb.append(line.charAt(c));
+          }
+        }
+        sb.append('\n');
+      }
+      System.out.println(sb.toString());
     }
   }
 
@@ -280,7 +310,7 @@ public class MonkeyMap {
             case LEFT:
               return new Teleport(firstRow(destSide) + colIn, lastCol(destSide), destDirection);
             case UP:
-              return new Teleport(lastRow(destSide), firstCol(destSide) + colIn, destDirection);
+              return new Teleport(lastRow(destSide), lastCol(destSide) - colIn, destDirection);
             default:
               throw new IllegalStateException();
 
@@ -340,7 +370,7 @@ public class MonkeyMap {
     }
 
     int lastRow(Side side) {
-      return firstRow(side) + sides(1);
+      return firstRow(side) + sides(1) - 1;
     }
 
     int firstCol(Side side) {
@@ -348,7 +378,7 @@ public class MonkeyMap {
     }
 
     int lastCol(Side side) {
-      return firstCol(side) + sides(1);
+      return firstCol(side) + sides(1) - 1;
     }
 
     int rowIn(Side side, int row) {
@@ -423,6 +453,16 @@ public class MonkeyMap {
     @Override
     Optional<Teleport> computeTeleport(int row, int col, Direction direction) {
       return teleporter.computeTeleport(row, col, direction);
+    }
+
+    @Override
+    void print() {
+      super.print();
+      try {
+        System.in.read();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 

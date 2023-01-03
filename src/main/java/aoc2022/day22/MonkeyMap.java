@@ -4,20 +4,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import aoccommon.InputHelper;
+import aoccommon.Pair;
 import aoccommon.Point;
 
 /** Solution for {@link https://adventofcode.com/2022/day/22}. */
 public class MonkeyMap {
 
-  private static final String INPUT = "aoc2022/day22/input.txt";
+  private static final String INPUT = "aoc2022/day22/example.txt";
 
   // TODO(maybe?): Make this generic to handle any folding cube shape rather than
   // hard-coding.
-  private static final Supplier<CubeTeleporter> TELEPORTER = (sideLength) -> INPUT.contains("example" ? new ExampleCubeTeleporter(sideLength) : new InputCubeTeleporter(sideLength);
+  private static final Function<Integer, CubeTeleporter> TELEPORTER = (sideLength) -> INPUT.contains("example")
+      ? new ExampleCubeTeleporter(sideLength)
+      : new InputCubeTeleporter(sideLength);
 
   private static enum Direction {
     RIGHT,
@@ -25,6 +29,12 @@ public class MonkeyMap {
     LEFT,
     UP,
   }
+
+  private static final Map<Direction, Direction> REVERSE = Map.of(
+      Direction.RIGHT, Direction.LEFT,
+      Direction.DOWN, Direction.UP,
+      Direction.UP, Direction.DOWN,
+      Direction.LEFT, Direction.RIGHT);
 
   private static record Teleport(int row, int col, Direction direction) {
   }
@@ -177,12 +187,136 @@ public class MonkeyMap {
   private static abstract class CubeTeleporter {
     private final int sideLength;
     private final Map<Side, Point> cubes = new HashMap<>();
+    private final Map<Pair<Side, Direction>, Pair<Side, Direction>> edges = new HashMap<>();
+    private final Map<Direction, Set<Side>> boundaries = new HashMap<>();
 
     CubeTeleporter(int sideLength) {
       this.sideLength = sideLength;
     }
 
-    abstract Optional<Teleport> computeTeleport(int row, int col, Direction direction);
+    Optional<Teleport> computeTeleport(int row, int col, Direction direction) {
+      Set<Side> boundarySides = boundaries.get(direction);
+
+      Side source = null;
+      switch (direction) {
+        case RIGHT:
+          for (Side boundary : boundarySides) {
+            if (row >= firstRow(boundary) && row <= lastRow(boundary) && col > lastCol(boundary)) {
+              source = boundary;
+              break;
+            }
+          }
+          break;
+        case DOWN:
+          for (Side boundary : boundarySides) {
+            if (col >= firstCol(boundary) && col <= lastCol(boundary) && row > lastRow(boundary)) {
+              source = boundary;
+              break;
+            }
+          }
+          break;
+        case LEFT:
+          for (Side boundary : boundarySides) {
+            if (row >= firstRow(boundary) && row <= lastRow(boundary) && col < firstCol(boundary)) {
+              source = boundary;
+              break;
+            }
+          }
+          break;
+        case UP:
+          for (Side boundary : boundarySides) {
+            if (col >= firstCol(boundary) && col <= lastCol(boundary) && row < firstRow(boundary)) {
+              source = boundary;
+              break;
+            }
+          }
+          break;
+        default:
+          throw new IllegalArgumentException();
+      }
+
+      if (source == null) {
+        return Optional.empty();
+      }
+      return Optional.of(computeTeleport(source, direction, row, col));
+    }
+
+    private Teleport computeTeleport(Side srcSide, Direction srcDirection, int row, int col) {
+      Pair<Side, Direction> destEdge = edges.get(Pair.of(srcSide, srcDirection));
+
+      Side destSide;
+        Direction destDirection;
+      try {
+        destSide = destEdge.first();
+        destDirection = destEdge.second();
+      } catch (NullPointerException e) {
+        System.out.println(String.format("srcSide=%s, srcDirection=%s, edges=%s", srcSide, srcDirection, edges));
+        throw e;
+      }
+
+      int rowIn = rowIn(srcSide, row);
+      int colIn = colIn(srcSide, col);
+
+      switch (srcDirection) {
+        case RIGHT:
+          switch (destDirection) {
+            case RIGHT:
+              return new Teleport(firstRow(destSide) + rowIn, firstCol(destSide), destDirection);
+            case DOWN:
+              return new Teleport(firstRow(destSide), lastCol(destSide) - rowIn, destDirection);
+            case LEFT:
+              return new Teleport(firstRow(destSide) + rowIn, lastCol(destSide), destDirection);
+            case UP:
+              return new Teleport(lastRow(destSide), firstCol(destSide) + rowIn, destDirection);
+            default:
+              throw new IllegalStateException();
+          }
+        case DOWN:
+          switch (destDirection) {
+            case RIGHT:
+              return new Teleport(lastRow(destSide) - colIn, firstCol(destSide), destDirection);
+            case DOWN:
+              return new Teleport(firstRow(destSide), firstCol(destSide) + colIn, destDirection);
+            case LEFT:
+              return new Teleport(firstRow(destSide) + colIn, lastCol(destSide), destDirection);
+            case UP:
+              return new Teleport(lastRow(destSide), firstCol(destSide) + colIn, destDirection);
+            default:
+              throw new IllegalStateException();
+
+          }
+        case LEFT:
+          switch (destDirection) {
+            case RIGHT:
+              return new Teleport(firstRow(destSide) + rowIn, firstCol(destSide), destDirection);
+            case DOWN:
+              return new Teleport(firstRow(destSide), firstCol(destSide) + rowIn, destDirection);
+            case LEFT:
+              return new Teleport(firstRow(destSide) + rowIn, lastCol(destSide), destDirection);
+            case UP:
+              return new Teleport(lastRow(destSide), lastCol(destSide) - rowIn, destDirection);
+            default:
+              throw new IllegalStateException();
+
+          }
+        case UP:
+          switch (destDirection) {
+            case RIGHT:
+              return new Teleport(firstRow(destSide) + colIn, firstCol(destSide), destDirection);
+            case DOWN:
+              return new Teleport(firstRow(destSide), firstCol(destSide) + colIn, destDirection);
+            case LEFT:
+              return new Teleport(lastRow(destSide) - colIn, lastCol(destSide), destDirection);
+            case UP:
+              return new Teleport(lastRow(destSide), firstCol(destSide) + colIn, destDirection);
+            default:
+              throw new IllegalStateException();
+
+          }
+        default:
+          throw new IllegalStateException();
+      }
+    }
 
     int sides(int num) {
       return num * sideLength;
@@ -190,6 +324,15 @@ public class MonkeyMap {
 
     void addSide(Side side, int cubeRow, int cubeCol) {
       cubes.put(side, Point.of(sides(cubeCol), sides(cubeRow)));
+    }
+
+    void addEdge(Side srcSide, Direction srcDirection, Side destSide, Direction destDirection) {
+      edges.put(Pair.of(srcSide, srcDirection), Pair.of(destSide, destDirection));
+      edges.put(Pair.of(destSide, REVERSE.get(destDirection)), Pair.of(srcSide, REVERSE.get(srcDirection)));
+    }
+
+    void addBoundarySides(Direction direction, Side... sides) {
+      boundaries.put(direction, Set.of(sides));
     }
 
     int firstRow(Side side) {
@@ -215,26 +358,6 @@ public class MonkeyMap {
     int colIn(Side side, int col) {
       return col - firstCol(side);
     }
-
-    private static Optional<Teleport> teleport(int row, int col, Direction dir) {
-      return Optional.of(new Teleport(row, col, dir));
-    }
-
-    static Optional<Teleport> up(int row, int col) {
-      return teleport(row, col, Direction.UP);
-    }
-
-    static Optional<Teleport> left(int row, int col) {
-      return teleport(row, col, Direction.LEFT);
-    }
-
-    static Optional<Teleport> right(int row, int col) {
-      return teleport(row, col, Direction.RIGHT);
-    }
-
-    static Optional<Teleport> down(int row, int col) {
-      return teleport(row, col, Direction.DOWN);
-    }
   }
 
   /**
@@ -251,76 +374,26 @@ public class MonkeyMap {
       addSide(Side.LEFT, 1, 1);
       addSide(Side.BOTTOM, 2, 2);
       addSide(Side.RIGHT, 2, 3);
-    }
 
-    @Override
-    Optional<Teleport> computeTeleport(int row, int col, Direction direction) {
-      switch (direction) {
-        case RIGHT:
-          /**
-           * [ ][ ][T][ ] ->
-           * [K][L][F][ ] ->
-           * [ ][ ][B][R] ->
-           */
-          if (row <= lastRow(Side.TOP) && col > lastCol(Side.TOP)) {
-            // Teleport from right edge of TOP to right edge of RIGHT, now going left.
-            return left(lastRow(Side.RIGHT) - rowIn(Side.TOP, row), lastCol(Side.RIGHT));
-          } else if (row <= lastRow(Side.FRONT) && col > lastCol(Side.FRONT)) {
-            // Teleport from right edge of FRONT to top edge of RIGHT, now going down.
-            return down(firstRow(Side.RIGHT), lastCol(Side.RIGHT) - rowIn(Side.FRONT, row));
-          } else if (row <= lastRow(Side.RIGHT) && col > lastCol(Side.RIGHT)) {
-            // Teleport from right edge of RIGHT to right edge of TOP, now going left.
-            return left(lastRow(Side.TOP) - rowIn(Side.RIGHT, row), lastCol(Side.TOP));
-          }
-        case DOWN:
-          /**
-           * [ ][ ][T][ ]
-           * [K][L][F][ ]
-           * [ ][ ][B][R]
-           * | | | |
-           * V V V V
-           */
-          if (col <= lastCol(Side.BACK) && row > lastRow(Side.BACK)) {
-            // Teleport from bottom edge of BACK to bottom edge of BOTTOM, now going up.
-            return up(lastRow(Side.BOTTOM), lastCol(Side.BOTTOM) - colIn(Side.BACK, col));
-          } else if (col <= lastCol(Side.LEFT) && row > lastRow(Side.LEFT)) {
-            // Teleport from bottom edge of LEFT to left edge of BOTTOM, now going right.
-            return right(lastRow(Side.BOTTOM) - colIn(Side.LEFT, col), firstCol(Side.BOTTOM));
-          } else if (col <= lastCol(Side.BOTTOM) && row > lastRow(Side.BOTTOM)) {
-            // Teleport from bottom edge of BOTTOM to bottom edge of BACK, now going up.
-            return up(lastRow(Side.BACK), lastCol(Side.BACK) - colIn(Side.BACK, col));
-          } else if (col <= lastCol(Side.RIGHT) && row > lastRow(Side.RIGHT)) {
-            // Teleport from bottom edge of RIGHT to left edge of BACK, now going left.
-            return left(lastRow(Side.BACK) - colIn(Side.BACK, col), firstCol(Side.LEFT));
-          }
-        case LEFT:
-          /**
-           * <- [ ][ ][T][ ]
-           * <- [K][L][F][ ]
-           * <- [ ][ ][B][R]
-           */
-          if (row <= lastRow(Side.TOP) && col < firstCol(Side.TOP)) {
-            // Teleport from left edge of TOP to top edge of LEFT, now going down.
-            return down(firstRow(Side.LEFT), rowIn(Side.TOP, row));
-          } else if (row <= lastRow(Side.BACK) && col < firstCol(Side.BACK)) {
-            // Teleport from left edge of BACK to bottom edge of RIGHT, now going up.
-            return up(lastRow(Side.RIGHT), lastCol(Side.RIGHT) - rowIn(Side.BACK, row));
-          } else if (row <= lastRow(Side.BOTTOM) && col < firstCol(Side.BOTTOM)) {
-            // Teleport from left edge of BOTTOM to bottom edge of LEFT, now going up.
-            return up(lastRow(Side.LEFT), lastCol(Side.LEFT) - rowIn(Side.BACK, row));
-          }
-        case UP:
-         /**
-           *  ^  ^  ^  ^
-           *  |  |  |  |
-           * [ ][ ][T][ ]
-           * [K][L][F][ ]
-           * [ ][ ][B][R]
-           */
-        default:
-          throw new IllegalArgumentException();
-      }
-      return Optional.empty();
+      addEdge(Side.TOP, Direction.RIGHT, Side.RIGHT, Direction.LEFT);
+      addEdge(Side.TOP, Direction.DOWN, Side.FRONT, Direction.DOWN);
+      addEdge(Side.TOP, Direction.LEFT, Side.LEFT, Direction.DOWN);
+      addEdge(Side.TOP, Direction.UP, Side.BACK, Direction.DOWN);
+
+      addEdge(Side.BACK, Direction.RIGHT, Side.LEFT, Direction.RIGHT);
+      addEdge(Side.LEFT, Direction.RIGHT, Side.FRONT, Direction.RIGHT);
+      addEdge(Side.FRONT, Direction.RIGHT, Side.RIGHT, Direction.DOWN);
+      addEdge(Side.RIGHT, Direction.DOWN, Side.BACK, Direction.LEFT);
+
+      addEdge(Side.BOTTOM, Direction.UP, Side.FRONT, Direction.UP);
+      addEdge(Side.BOTTOM, Direction.RIGHT, Side.RIGHT, Direction.RIGHT);
+      addEdge(Side.BOTTOM, Direction.LEFT, Side.LEFT, Direction.UP);
+      addEdge(Side.BOTTOM, Direction.DOWN, Side.BACK, Direction.UP);
+
+      addBoundarySides(Direction.RIGHT, Side.TOP, Side.FRONT, Side.RIGHT);
+      addBoundarySides(Direction.UP, Side.BACK, Side.LEFT, Side.TOP, Side.RIGHT);
+      addBoundarySides(Direction.LEFT, Side.TOP, Side.BACK, Side.BOTTOM);
+      addBoundarySides(Direction.DOWN, Side.BACK, Side.LEFT, Side.BOTTOM, Side.RIGHT);
     }
   }
 
@@ -334,18 +407,22 @@ public class MonkeyMap {
     InputCubeTeleporter(int sideLength) {
       super(sideLength);
     }
+  }
+
+  private static class Cube extends Board {
+
+    private final CubeTeleporter teleporter;
+
+    Cube(List<String> lines, String instruction) {
+      super(lines, instruction);
+
+      int sideLength = lines.stream().map(String::trim).mapToInt(String::length).min().orElse(0);
+      teleporter = TELEPORTER.apply(sideLength);
+    }
 
     @Override
     Optional<Teleport> computeTeleport(int row, int col, Direction direction) {
-      switch (direction) {
-        case RIGHT:
-        case DOWN:
-        case LEFT:
-        case UP:
-        default:
-          throw new IllegalArgumentException();
-      }
-      return Optional.empty();
+      return teleporter.computeTeleport(row, col, direction);
     }
   }
 
@@ -359,5 +436,11 @@ public class MonkeyMap {
     board.navigate();
 
     System.out.println("Part 1: " + computeFinalPositionAndFacing(board));
+
+    // Part 2.
+    Cube cube = new Cube(lines.subList(0, lines.size() - 2), instruction);
+    cube.navigate();
+
+    System.out.println("Part 1: " + computeFinalPositionAndFacing(cube));
   }
 }

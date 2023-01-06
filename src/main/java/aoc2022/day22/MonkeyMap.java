@@ -521,8 +521,6 @@ public class MonkeyMap {
     // Part 2.
     Cube cube = new Cube(lines.subList(0, lines.size() - 2), instruction);
     cube.navigate();
-    // 35361 too low
-    // 132144 too low
     System.out.println("Part 2: " + computeFinalPositionAndFacing(cube));
   }
 }

@@ -15,9 +15,9 @@ import aoccommon.Point;
 /** Solution for {@link https://adventofcode.com/2022/day/22}. */
 public class MonkeyMap {
 
-  private static final String INPUT = "aoc2022/day22/example.txt";
+  private static final String INPUT = "aoc2022/day22/input.txt";
 
-  private static final boolean DEBUG = true;
+  private static boolean DEBUG = false;
 
   // TODO(maybe?): Make this generic to handle any folding cube shape rather than
   // hard-coding.
@@ -33,16 +33,18 @@ public class MonkeyMap {
   }
 
   private static final Map<Direction, Character> DIRECTION_CHARACTERS = Map.of(
-    Direction.RIGHT, '>',
-    Direction.DOWN, 'v',
-    Direction.LEFT, '<',
-    Direction.UP, '^');
+      Direction.RIGHT, '>',
+      Direction.DOWN, 'v',
+      Direction.LEFT, '<',
+      Direction.UP, '^');
 
   private static final Map<Direction, Direction> REVERSE = Map.of(
       Direction.RIGHT, Direction.LEFT,
       Direction.DOWN, Direction.UP,
       Direction.UP, Direction.DOWN,
       Direction.LEFT, Direction.RIGHT);
+
+  private static final boolean FLIPPED = true;
 
   private static record Teleport(int row, int col, Direction direction) {
   }
@@ -97,7 +99,7 @@ public class MonkeyMap {
         } else {
           turn(c);
         }
-        
+
       }
     }
 
@@ -217,7 +219,7 @@ public class MonkeyMap {
   private static abstract class CubeTeleporter {
     private final int sideLength;
     private final Map<Side, Point> cubes = new HashMap<>();
-    private final Map<Pair<Side, Direction>, Pair<Side, Direction>> edges = new HashMap<>();
+    private final Map<Pair<Side, Direction>, Pair<Pair<Side, Direction>, Boolean>> edges = new HashMap<>();
     private final Map<Direction, Set<Side>> boundaries = new HashMap<>();
 
     CubeTeleporter(int sideLength) {
@@ -272,17 +274,11 @@ public class MonkeyMap {
     }
 
     private Teleport computeTeleport(Side srcSide, Direction srcDirection, int row, int col) {
-      Pair<Side, Direction> destEdge = edges.get(Pair.of(srcSide, srcDirection));
+      Pair<Pair<Side, Direction>, Boolean> destEdge = edges.get(Pair.of(srcSide, srcDirection));
 
-      Side destSide;
-        Direction destDirection;
-      try {
-        destSide = destEdge.first();
-        destDirection = destEdge.second();
-      } catch (NullPointerException e) {
-        System.out.println(String.format("srcSide=%s, srcDirection=%s, edges=%s", srcSide, srcDirection, edges));
-        throw e;
-      }
+      Side destSide = destEdge.first().first();
+      Direction destDirection = destEdge.first().second();
+      boolean flipped = destEdge.second();
 
       int rowIn = rowIn(srcSide, row);
       int colIn = colIn(srcSide, col);
@@ -291,26 +287,34 @@ public class MonkeyMap {
         case RIGHT:
           switch (destDirection) {
             case RIGHT:
-              return new Teleport(firstRow(destSide) + rowIn, firstCol(destSide), destDirection);
+              return new Teleport(flipped ? lastRow(destSide) - rowIn : firstRow(destSide) + rowIn, firstCol(destSide),
+                  destDirection);
             case DOWN:
-              return new Teleport(firstRow(destSide), lastCol(destSide) - rowIn, destDirection);
+              return new Teleport(firstRow(destSide), flipped ? lastCol(destSide) - rowIn : firstCol(destSide) + rowIn,
+                  destDirection);
             case LEFT:
-              return new Teleport(firstRow(destSide) + rowIn, lastCol(destSide), destDirection);
+              return new Teleport(flipped ? lastRow(destSide) - rowIn : firstRow(destSide) + rowIn, lastCol(destSide),
+                  destDirection);
             case UP:
-              return new Teleport(lastRow(destSide), firstCol(destSide) + rowIn, destDirection);
+              return new Teleport(lastRow(destSide), flipped ? lastCol(destSide) - rowIn : firstCol(destSide) + rowIn,
+                  destDirection);
             default:
               throw new IllegalStateException();
           }
         case DOWN:
           switch (destDirection) {
             case RIGHT:
-              return new Teleport(lastRow(destSide) - colIn, firstCol(destSide), destDirection);
+              return new Teleport(flipped ? lastRow(destSide) - colIn : firstRow(destSide) + colIn, firstCol(destSide),
+                  destDirection);
             case DOWN:
-              return new Teleport(firstRow(destSide), firstCol(destSide) + colIn, destDirection);
+              return new Teleport(firstRow(destSide), flipped ? lastCol(destSide) - colIn : firstCol(destSide) + colIn,
+                  destDirection);
             case LEFT:
-              return new Teleport(firstRow(destSide) + colIn, lastCol(destSide), destDirection);
+              return new Teleport(flipped ? lastRow(destSide) - colIn : firstRow(destSide) + colIn, lastCol(destSide),
+                  destDirection);
             case UP:
-              return new Teleport(lastRow(destSide), lastCol(destSide) - colIn, destDirection);
+              return new Teleport(lastRow(destSide), flipped ? lastCol(destSide) - colIn : firstCol(destSide) + colIn,
+                  destDirection);
             default:
               throw new IllegalStateException();
 
@@ -318,13 +322,17 @@ public class MonkeyMap {
         case LEFT:
           switch (destDirection) {
             case RIGHT:
-              return new Teleport(firstRow(destSide) + rowIn, firstCol(destSide), destDirection);
+              return new Teleport(flipped ? lastRow(destSide) - rowIn : firstRow(destSide) + rowIn, firstCol(destSide),
+                  destDirection);
             case DOWN:
-              return new Teleport(firstRow(destSide), firstCol(destSide) + rowIn, destDirection);
+              return new Teleport(firstRow(destSide), flipped ? lastCol(destSide) - rowIn : firstCol(destSide) + rowIn,
+                  destDirection);
             case LEFT:
-              return new Teleport(firstRow(destSide) + rowIn, lastCol(destSide), destDirection);
+              return new Teleport(flipped ? lastRow(destSide) - rowIn : firstRow(destSide) + rowIn, lastCol(destSide),
+                  destDirection);
             case UP:
-              return new Teleport(lastRow(destSide), lastCol(destSide) - rowIn, destDirection);
+              return new Teleport(lastRow(destSide), flipped ? lastCol(destSide) - rowIn : firstCol(destSide) + rowIn,
+                  destDirection);
             default:
               throw new IllegalStateException();
 
@@ -332,13 +340,17 @@ public class MonkeyMap {
         case UP:
           switch (destDirection) {
             case RIGHT:
-              return new Teleport(firstRow(destSide) + colIn, firstCol(destSide), destDirection);
+              return new Teleport(flipped ? lastRow(destSide) - colIn : firstRow(destSide) + colIn, firstCol(destSide),
+                  destDirection);
             case DOWN:
-              return new Teleport(firstRow(destSide), firstCol(destSide) + colIn, destDirection);
+              return new Teleport(firstRow(destSide), flipped ? lastCol(destSide) - colIn : firstCol(destSide) + colIn,
+                  destDirection);
             case LEFT:
-              return new Teleport(lastRow(destSide) - colIn, lastCol(destSide), destDirection);
+              return new Teleport(flipped ? lastRow(destSide) - colIn : firstRow(destSide) + colIn, lastCol(destSide),
+                  destDirection);
             case UP:
-              return new Teleport(lastRow(destSide), firstCol(destSide) + colIn, destDirection);
+              return new Teleport(lastRow(destSide), flipped ? lastCol(destSide) - colIn : firstCol(destSide) + colIn,
+                  destDirection);
             default:
               throw new IllegalStateException();
 
@@ -356,9 +368,9 @@ public class MonkeyMap {
       cubes.put(side, Point.of(sides(cubeCol), sides(cubeRow)));
     }
 
-    void addEdge(Side srcSide, Direction srcDirection, Side destSide, Direction destDirection) {
-      edges.put(Pair.of(srcSide, srcDirection), Pair.of(destSide, destDirection));
-      edges.put(Pair.of(destSide, REVERSE.get(destDirection)), Pair.of(srcSide, REVERSE.get(srcDirection)));
+    void addEdge(Side srcSide, Direction srcDirection, Side destSide, Direction destDirection, boolean flipped) {
+      edges.put(Pair.of(srcSide, srcDirection), Pair.of(Pair.of(destSide, destDirection), flipped));
+      edges.put(Pair.of(destSide, REVERSE.get(destDirection)), Pair.of(Pair.of(srcSide, REVERSE.get(srcDirection)), flipped));
     }
 
     void addBoundarySides(Direction direction, Side... sides) {
@@ -405,20 +417,20 @@ public class MonkeyMap {
       addSide(Side.BOTTOM, 2, 2);
       addSide(Side.RIGHT, 2, 3);
 
-      addEdge(Side.TOP, Direction.RIGHT, Side.RIGHT, Direction.LEFT);
-      addEdge(Side.TOP, Direction.DOWN, Side.FRONT, Direction.DOWN);
-      addEdge(Side.TOP, Direction.LEFT, Side.LEFT, Direction.DOWN);
-      addEdge(Side.TOP, Direction.UP, Side.BACK, Direction.DOWN);
+      addEdge(Side.TOP, Direction.RIGHT, Side.RIGHT, Direction.LEFT, FLIPPED);
+      addEdge(Side.TOP, Direction.DOWN, Side.FRONT, Direction.DOWN, !FLIPPED);
+      addEdge(Side.TOP, Direction.LEFT, Side.LEFT, Direction.DOWN, !FLIPPED);
+      addEdge(Side.TOP, Direction.UP, Side.BACK, Direction.DOWN, FLIPPED);
 
-      addEdge(Side.BACK, Direction.RIGHT, Side.LEFT, Direction.RIGHT);
-      addEdge(Side.LEFT, Direction.RIGHT, Side.FRONT, Direction.RIGHT);
-      addEdge(Side.FRONT, Direction.RIGHT, Side.RIGHT, Direction.DOWN);
-      addEdge(Side.RIGHT, Direction.DOWN, Side.BACK, Direction.LEFT);
+      addEdge(Side.BACK, Direction.RIGHT, Side.LEFT, Direction.RIGHT, !FLIPPED);
+      addEdge(Side.LEFT, Direction.RIGHT, Side.FRONT, Direction.RIGHT, !FLIPPED);
+      addEdge(Side.FRONT, Direction.RIGHT, Side.RIGHT, Direction.DOWN, FLIPPED);
+      addEdge(Side.RIGHT, Direction.DOWN, Side.BACK, Direction.LEFT, FLIPPED);
 
-      addEdge(Side.BOTTOM, Direction.UP, Side.FRONT, Direction.UP);
-      addEdge(Side.BOTTOM, Direction.RIGHT, Side.RIGHT, Direction.RIGHT);
-      addEdge(Side.BOTTOM, Direction.LEFT, Side.LEFT, Direction.UP);
-      addEdge(Side.BOTTOM, Direction.DOWN, Side.BACK, Direction.UP);
+      addEdge(Side.BOTTOM, Direction.UP, Side.FRONT, Direction.UP, !FLIPPED);
+      addEdge(Side.BOTTOM, Direction.RIGHT, Side.RIGHT, Direction.RIGHT, !FLIPPED);
+      addEdge(Side.BOTTOM, Direction.LEFT, Side.LEFT, Direction.UP, FLIPPED);
+      addEdge(Side.BOTTOM, Direction.DOWN, Side.BACK, Direction.UP, FLIPPED);
 
       addBoundarySides(Direction.RIGHT, Side.TOP, Side.FRONT, Side.RIGHT);
       addBoundarySides(Direction.UP, Side.BACK, Side.LEFT, Side.TOP, Side.RIGHT);
@@ -428,14 +440,40 @@ public class MonkeyMap {
   }
 
   /**
-   * [ ][#][#]
-   * [ ][#][ ]
-   * [#][#][ ]
-   * [#][ ][ ]
+   * [ ][T][R]
+   * [ ][F][ ]
+   * [L][B][ ]
+   * [K][ ][ ]
    */
   private static class InputCubeTeleporter extends CubeTeleporter {
     InputCubeTeleporter(int sideLength) {
       super(sideLength);
+      addSide(Side.TOP, 0, 1);
+      addSide(Side.RIGHT, 0, 2);
+      addSide(Side.FRONT, 1, 1);
+      addSide(Side.BOTTOM, 2, 1);
+      addSide(Side.LEFT, 2, 0);
+      addSide(Side.BACK, 3, 0);
+
+      addEdge(Side.TOP, Direction.RIGHT, Side.RIGHT, Direction.RIGHT, !FLIPPED);
+      addEdge(Side.TOP, Direction.DOWN, Side.FRONT, Direction.DOWN, !FLIPPED);
+      addEdge(Side.TOP, Direction.LEFT, Side.LEFT, Direction.RIGHT, FLIPPED);
+      addEdge(Side.TOP, Direction.UP, Side.BACK, Direction.RIGHT, !FLIPPED);
+
+      addEdge(Side.FRONT, Direction.RIGHT, Side.RIGHT, Direction.UP, !FLIPPED);
+      addEdge(Side.FRONT, Direction.LEFT, Side.LEFT, Direction.DOWN, !FLIPPED);
+      addEdge(Side.LEFT, Direction.DOWN, Side.BACK, Direction.DOWN, !FLIPPED);
+      addEdge(Side.RIGHT, Direction.UP, Side.BACK, Direction.UP, !FLIPPED);
+
+      addEdge(Side.BOTTOM, Direction.UP, Side.FRONT, Direction.UP, !FLIPPED);
+      addEdge(Side.BOTTOM, Direction.RIGHT, Side.RIGHT, Direction.LEFT, FLIPPED);
+      addEdge(Side.BOTTOM, Direction.LEFT, Side.LEFT, Direction.LEFT, !FLIPPED);
+      addEdge(Side.BOTTOM, Direction.DOWN, Side.BACK, Direction.LEFT, !FLIPPED);
+
+      addBoundarySides(Direction.RIGHT, Side.RIGHT, Side.FRONT, Side.BACK, Side.BOTTOM);
+      addBoundarySides(Direction.UP, Side.LEFT, Side.TOP, Side.RIGHT);
+      addBoundarySides(Direction.LEFT, Side.TOP, Side.FRONT, Side.LEFT, Side.BACK);
+      addBoundarySides(Direction.DOWN, Side.BACK, Side.BOTTOM, Side.RIGHT);
     }
   }
 
@@ -457,6 +495,9 @@ public class MonkeyMap {
 
     @Override
     void print() {
+      if (!DEBUG) {
+        return;
+      }
       super.print();
       try {
         System.in.read();
@@ -480,7 +521,8 @@ public class MonkeyMap {
     // Part 2.
     Cube cube = new Cube(lines.subList(0, lines.size() - 2), instruction);
     cube.navigate();
-
-    System.out.println("Part 1: " + computeFinalPositionAndFacing(cube));
+    // 35361 too low
+    // 132144 too low
+    System.out.println("Part 2: " + computeFinalPositionAndFacing(cube));
   }
 }

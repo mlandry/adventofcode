@@ -63,7 +63,7 @@ public class UnstableDiffusion {
       }
     }
 
-    for (int round = 0; round < 10; round++) {
+    for (int round = 0; ; round++) {
       // System.out.println("Round " + round);
       // print(elves);
       
@@ -112,11 +112,16 @@ public class UnstableDiffusion {
         // All clear to move!
         newElves.add(newSpot);
       }
+      if (round == 9) {
+        System.out.println("Part 1: " + countEmptyGroupTilesInRectangleContainingAllElves(newElves));
+      }
+      if (elves.equals(newElves)) {
+        System.out.println("Part 2: " + (round + 1));
+        break;        
+      }
       elves = newElves;
       // Debug.waitForInput();
     }
-
-    System.out.println("Part 1: " + countEmptyGroupTilesInRectangleContainingAllElves(elves));
   }
 
   private static Stream<Point> adjacent(Point point, EnumSet<Direction> directions) {

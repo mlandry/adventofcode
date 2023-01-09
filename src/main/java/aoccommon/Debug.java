@@ -38,7 +38,15 @@ public final class Debug {
     }
   }
 
-  public static void printlnEveryN(int n, String fmt, Object ... args) {
+  public static void waitForInput() {
+    try {
+      System.in.read();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }    
+  }
+
+  public static void printlnEveryN(int n, String fmt, Object... args) {
     if (!LOGGING_ENABLED) {
       return;
     }

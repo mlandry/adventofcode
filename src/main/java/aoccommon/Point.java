@@ -31,4 +31,9 @@ public final record Point(IntArray coordinates) {
   public int getN(int n) {
     return coordinates.get()[n];
   }
+
+  @Override
+  public String toString() {
+    return coordinates.toString();
+  }
 }

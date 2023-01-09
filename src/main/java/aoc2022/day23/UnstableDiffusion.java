@@ -10,13 +10,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import aoccommon.Debug;
 import aoccommon.InputHelper;
 import aoccommon.Point;
 
 /** Solution for {@link https://adventofcode.com/2022/day/23}. */
 public class UnstableDiffusion {
 
-  private static final String INPUT = "aoc2022/day23/example.txt";
+  private static final String INPUT = "aoc2022/day23/input.txt";
 
   private static enum Direction {
     NW(-1, -1),
@@ -50,42 +51,43 @@ public class UnstableDiffusion {
   }
 
   public static void main(String[] args) throws Exception {
-    int xsize = 0;
     Set<Point> elves = new HashSet<>();
 
     List<String> input = InputHelper.linesFromResource(INPUT).collect(Collectors.toList());
     for (int y = 0; y < input.size(); y++) {
       String line = input.get(y);
-      xsize = Math.max(xsize, line.length());
       for (int x = 0; x < line.length(); x++) {
         if (line.charAt(x) == '#') {
           elves.add(Point.of(x, y));
         }
       }
     }
-    int ysize = input.size();
 
     for (int round = 0; round < 10; round++) {
+      // System.out.println("Round " + round);
+      // print(elves);
+      
       int lookIndex = round % Direction.LOOK_ORDER.length;
       Map<Point, Point> moves = new HashMap<>();
       // First half, each elf determines if and where they are going to move.
       final Set<Point> elvesRef = elves;
       for (Point elf : elves) {
-        boolean anyElvesAdjacent = adjacent(elf, EnumSet.allOf(Direction.class), xsize, ysize)
+        boolean anyElvesAdjacent = adjacent(elf, EnumSet.allOf(Direction.class))
             .anyMatch(p -> elvesRef.contains(p));
         if (!anyElvesAdjacent) {
           continue;
         }
         for (int i = 0; i < Direction.LOOK_ORDER.length; i++) {
-          Direction direction = Direction.LOOK_ORDER[lookIndex + i % Direction.LOOK_ORDER.length];
-          anyElvesAdjacent = adjacent(elf, Direction.LOOKS.get(direction), xsize, ysize)
+          Direction direction = Direction.LOOK_ORDER[(lookIndex + i) % Direction.LOOK_ORDER.length];
+          anyElvesAdjacent = adjacent(elf, Direction.LOOKS.get(direction))
               .anyMatch(p -> elvesRef.contains(p));
-          if (anyElvesAdjacent) {
-            continue;
+          if (!anyElvesAdjacent) {
+            moves.put(elf, direction.move(elf));
+            break;
           }
-          moves.put(elf, direction.move(elf));
         }
       }
+      // System.out.println("Moves: " + moves);
 
       Map<Point, Long> moveCounts = moves.values().stream()
           .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
@@ -111,30 +113,69 @@ public class UnstableDiffusion {
         newElves.add(newSpot);
       }
       elves = newElves;
+      // Debug.waitForInput();
     }
 
     System.out.println("Part 1: " + countEmptyGroupTilesInRectangleContainingAllElves(elves));
   }
 
-  private static Stream<Point> adjacent(Point point, EnumSet<Direction> directions, int xsize, int ysize) {
-    return directions.stream()
-        .map(d -> d.move(point))
-        .filter(p -> p.getX() < 0)
-        .filter(p -> p.getX() >= xsize)
-        .filter(p -> p.getY() < 0)
-        .filter(p -> p.getY() >= ysize);
+  private static Stream<Point> adjacent(Point point, EnumSet<Direction> directions) {
+    return directions.stream().map(d -> d.move(point));
 
   }
 
   private static int countEmptyGroupTilesInRectangleContainingAllElves(Set<Point> elves) {
-    int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = 0, maxY = 0;
-    for (Point elf : elves) {
-      minX = Math.min(minX, elf.getX());
-      minY = Math.min(minY, elf.getY());
-      maxX = Math.max(maxX, elf.getX());
-      maxY = Math.max(maxY, elf.getY());
+    Bounds bounds = Bounds.compute(elves);
+    return bounds.xsize() * bounds.ysize() - elves.size();
+  }
+
+  private static void print(Set<Point> elves) {
+    Bounds bounds = Bounds.compute(elves);
+    StringBuilder sb = new StringBuilder();
+    for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
+      for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
+        sb.append(elves.contains(Point.of(x, y)) ? '#' : '.');
+      }
+      sb.append('\n');
+    }
+    System.out.println(sb.toString());
+  }
+
+  private static record Bounds(Point min, Point max) {
+
+    static Bounds compute(Set<Point> points) {
+      int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = 0, maxY = 0;
+      for (Point p : points) {
+        minX = Math.min(minX, p.getX());
+        minY = Math.min(minY, p.getY());
+        maxX = Math.max(maxX, p.getX());
+        maxY = Math.max(maxY, p.getY());
+      }
+      return new Bounds(Point.of(minX, minY), Point.of(maxX, maxY));
     }
 
-    return (maxX - minX + 1) * (maxY - minY + 1) - elves.size();
+    int minY() {
+      return min.getY();
+    }
+
+    int minX() {
+      return min.getX();
+    }
+
+    int maxY() {
+      return max.getY();
+    }
+
+    int maxX() {
+      return max.getX();
+    }
+
+    int ysize() {
+      return maxY() - minY() + 1;
+    }
+
+    int xsize() {
+      return maxX() - minX() + 1;
+    }
   }
 }

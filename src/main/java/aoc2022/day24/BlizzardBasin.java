@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 import aoccommon.Debug;
 import aoccommon.InputHelper;
 import aoccommon.Point;
+import aoccommon.Stats;
 
 /** Solution for {@link https://adventofcode.com/2022/day/24}. */
 public class BlizzardBasin {
@@ -94,6 +95,7 @@ public class BlizzardBasin {
       // Debug.waitForInput();
       OptionalInt result = Stream.ofNullable(cache.get(state)).mapToInt(i -> i).findAny();
       if (result.isPresent()) {
+        Stats.incrementCounter("cache-hit");
         return result.getAsInt();
       }
 
@@ -169,6 +171,7 @@ public class BlizzardBasin {
 
     Navigator navigator = new Navigator(basin);
     System.out.println("Part 1: " + navigator.navigate(blizzards));
+    Stats.print(System.out);
   }
 
   private static void print(Basin basin, Point position, Set<Blizzard> blizzards) {

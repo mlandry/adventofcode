@@ -12,6 +12,9 @@ public class Stats {
 
   private static final Map<String, Long> COUNTERS = new HashMap<>();
 
+  private static final long PRINT_EVERY = Long.MAX_VALUE;
+  private static long invocations;
+
   public static void startTimer(String name) {
     ACTIVE.put(name, System.currentTimeMillis());
   }
@@ -19,6 +22,9 @@ public class Stats {
   public static void endTimer(String name) {
     long elapsed = System.currentTimeMillis() - ACTIVE.remove(name);
     COMPLETED.computeIfAbsent(name, k -> new ArrayList<>()).add(elapsed);
+    if (++invocations % PRINT_EVERY == 0) {
+      print(System.out);
+    }
   }
 
   public static void print(PrintStream out) {
@@ -26,7 +32,7 @@ public class Stats {
       out.println("=== TIMERS ===");
       for (Map.Entry<String, List<Long>> entry : COMPLETED.entrySet()) {
         if (entry.getValue().size() == 1) {
-          out.println(String.format("[%s]: %d", entry.getKey(), entry.getValue().get(0)));
+          out.println(String.format("[%s]: %dms", entry.getKey(), entry.getValue().get(0)));
         } else {
           long min = Long.MAX_VALUE;
           long max = 0;
@@ -37,7 +43,7 @@ public class Stats {
             sum += value;
           }
           long avg = sum / entry.getValue().size();
-          out.println(String.format("[%s]: %d total, %d avg, %d min, %d max", entry.getKey(), sum, avg, min, max));
+          out.println(String.format("[%s]: %dms total, %dms avg, %dms min, %dms max", entry.getKey(), sum, avg, min, max));
         }
       }
     }
@@ -49,5 +55,8 @@ public class Stats {
 
   public static void incrementCounter(String name) {
     COUNTERS.compute(name, (k, v) -> v == null ? 1 : v + 1);
+    if (++invocations % PRINT_EVERY == 0) {
+      print(System.out);
+    }
   }
 }

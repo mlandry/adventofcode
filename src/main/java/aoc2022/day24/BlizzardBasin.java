@@ -6,10 +6,12 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import aoccommon.InputHelper;
 import aoccommon.Point;
@@ -49,9 +51,10 @@ public class BlizzardBasin {
 
   private static record Basin(int rightWall, int bottomWall, Point entrance, Point exit) {
     Set<Blizzard> moveBlizzards(Set<Blizzard> blizzards) {
-      return blizzards.stream()
+      Set<Blizzard> result = blizzards.stream()
           .map(b -> moveBlizzard(b))
           .collect(Collectors.toSet());
+      return result;
     }
 
     Blizzard moveBlizzard(Blizzard blizzard) {
@@ -75,17 +78,40 @@ public class BlizzardBasin {
   private static record State(Point position, Set<Blizzard> blizzards, int minutes) {
   }
 
+  private static record Positions(Point position, Set<Blizzard> blizzards) {
+  }
+
+  private static int compare(State s1, State s2, Basin basin) {
+    // Prefer nodes with fewer minutes first.
+    int result = Integer.compare(s1.minutes(), s2.minutes());
+    if (result != 0) {
+      return result;
+    }
+    // Then compare distance to goal (roughly).
+    return Integer
+        .compare(estimateDistance(s1.position(), basin.exit()), estimateDistance(s2.position(), basin.exit()));
+  }
+
+  private static int estimateDistance(Point point, Point dest) {
+    return (dest.getY() - point.getY()) + (dest.getX() - point.getX());
+  }
+
   private static class Navigator {
     private final Basin basin;
-    private final Queue<State> queue = new LinkedList<>();
+    private final Queue<State> queue;
+    private final Set<Positions> visited;
 
     Navigator(Basin basin) {
       this.basin = basin;
+      // queue = new PriorityQueue<>((s1, s2) -> compare(s1, s2, basin));
+      queue = new LinkedList<>();
+      visited = new HashSet<>();
     }
 
     int navigate(Set<Blizzard> blizzards) {
       queue.offer(new State(basin.entrance(), blizzards, 0));
       while (!queue.isEmpty()) {
+        Stats.incrementCounter("visited");
         State state = queue.poll();
         if (state.position().equals(basin.exit())) {
           return state.minutes();
@@ -95,34 +121,41 @@ public class BlizzardBasin {
         Set<Point> occupied = nextBlizzards.stream().map(Blizzard::position).collect(Collectors.toSet());
         int nextMinutes = state.minutes() + 1;
 
-        // Option 1: stay put if a blizzard isn't coming.
-        if (!occupied.contains(state.position())) {
-          queue.offer(new State(state.position(), nextBlizzards, nextMinutes));
-        }
-
-        // Option 2: move up.
-        Point next = Point.of(state.position().getX(), state.position().getY() - 1);
-        if (next.getY() > 0 && !occupied.contains(next)) {
-          queue.offer(new State(next, nextBlizzards, nextMinutes));
-        }
-
-        // Option 3: move right.
-        next = Point.of(state.position().getX() + 1, state.position().getY());
+        // Option 1: move right.
+        Stream.Builder<State> nextStates = Stream.builder();
+        Point next = Point.of(state.position().getX() + 1, state.position().getY());
         if (next.getY() > 0 && next.getX() < basin.rightWall() && !occupied.contains(next)) {
-          queue.offer(new State(next, nextBlizzards, nextMinutes));
+          nextStates.add(new State(next, nextBlizzards, nextMinutes));
         }
 
-        // Option 4: move down.
+        // Option 2: move down.
         next = Point.of(state.position().getX(), state.position().getY() + 1);
         if ((basin.exit().equals(next) || next.getY() < basin.bottomWall()) && !occupied.contains(next)) {
-          queue.offer(new State(next, nextBlizzards, nextMinutes));
+          nextStates.add(new State(next, nextBlizzards, nextMinutes));
+        }
+
+        // Option 3: stay put if a blizzard isn't coming.
+        if (!occupied.contains(state.position())) {
+          nextStates.add(new State(state.position(), nextBlizzards, nextMinutes));
+        }
+
+        // Option 4: move up.
+        next = Point.of(state.position().getX(), state.position().getY() - 1);
+        if (next.getY() > 0 && !occupied.contains(next)) {
+          nextStates.add(new State(next, nextBlizzards, nextMinutes));
         }
 
         // Option 5: move left.
         next = Point.of(state.position().getX() - 1, state.position().getY());
         if (next.getY() > 0 && next.getX() > 0 && !occupied.contains(next)) {
-          queue.offer(new State(next, nextBlizzards, nextMinutes));
+          nextStates.add(new State(next, nextBlizzards, nextMinutes));
         }
+
+        nextStates.build().forEach(s -> {
+          if (visited.add(new Positions(s.position(), s.blizzards()))) {
+            queue.offer(s);
+          }
+        });
       }
       return -1;
     }

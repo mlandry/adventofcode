@@ -162,7 +162,7 @@ public class BlizzardBasin {
 
         // Option 5: move left.
         next = Point.of(state.position().getX() - 1, state.position().getY());
-        if (next.getY() > 0 && next.getX() > 0 && !occupied.contains(next)) {
+        if (next.getY() < basin.bottomWall() && next.getY() > 0 && next.getX() > 0 && !occupied.contains(next)) {
           nextStates.add(new State(next, nextMinutes));
         }
 
@@ -218,7 +218,7 @@ public class BlizzardBasin {
     Stats.endTimer("navigate");
     System.out.println("Part 2: " + minutes);
 
-    Stats.print(System.out);
+    // Stats.print(System.out);
   }
 
   private static void print(Basin basin, Point position, Set<Blizzard> blizzards) {

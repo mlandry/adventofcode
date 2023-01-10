@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import aoccommon.Debug;
 import aoccommon.InputHelper;
 import aoccommon.IntArray;
+import aoccommon.Stats;
 
 /** Solution for {@link https://adventofcode.com/2022/day/19}. */
 public class NotEnoughMinerals {
@@ -21,15 +22,15 @@ public class NotEnoughMinerals {
 
   public static void main(String[] args) throws Exception {
     // Debug.enablePrint();
-    Debug.startTimer("parsing");
+    Stats.startTimer("parsing");
     List<Blueprint> blueprints = InputHelper.linesFromResource(INPUT)
         .map(Blueprint::parse)
         .collect(Collectors.toList());
-    Debug.endTimer("parsing");
+    Stats.endTimer("parsing");
 
     List<Factory> factories = blueprints.stream().map(Factory::new).collect(Collectors.toList());
 
-    Debug.startTimer("part1");
+    Stats.startTimer("part1");
     int qualityLevelSum = factories.stream()
         .mapToInt(factory -> {
           // Result result = factory.produceMaximumGeodes(State.start(24));
@@ -39,9 +40,9 @@ public class NotEnoughMinerals {
         })
         .sum();
     System.out.println("Part 1: " + qualityLevelSum);
-    Debug.endTimer("part1");
+    Stats.endTimer("part1");
 
-    Debug.startTimer("part2");
+    Stats.startTimer("part2");
     long blueprintSubsetGeodeProduct = factories.stream()
         .limit(3)
         .mapToLong(factory -> {
@@ -53,7 +54,8 @@ public class NotEnoughMinerals {
         })
         .reduce(1, (a, b) -> a * b);
     System.out.println("Part 2: " + blueprintSubsetGeodeProduct);
-    Debug.endTimer("part2");
+    Stats.endTimer("part2");
+    // Stats.print(System.out);
   }
 
   @SuppressWarnings("unused")

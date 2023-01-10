@@ -1,6 +1,5 @@
 package aoc2022.day16;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,7 +7,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
@@ -18,6 +16,7 @@ import java.util.stream.Stream;
 
 import aoccommon.Debug;
 import aoccommon.InputHelper;
+import aoccommon.Stats;
 
 /** Solution for {@link https://adventofcode.com/2022/day/16}. */
 public class ProboscideaVolcanium {
@@ -30,10 +29,11 @@ public class ProboscideaVolcanium {
   public static void main(String[] args) throws Exception {
     // Debug.enablePrint();
     Volcano volcano = Volcano.build(InputHelper.linesFromResource(INPUT));
-    Debug.startTimer("main");
+    Stats.startTimer("main");
     System.out.println("Part 1: " + volcano.maxmimizePressureReleased(State.start("AA", 30)));
     System.out.println("Part 2: " + volcano.maximizePressureReleasedWithElephant(State.start("AA", 30)));
-    Debug.endTimer("main");
+    Stats.endTimer("main");
+    // Stats.print(System.out);
   }
 
   private static class Volcano {

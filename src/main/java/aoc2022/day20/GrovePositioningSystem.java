@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 
 import aoccommon.Debug;
 import aoccommon.InputHelper;
+import aoccommon.Stats;
 
 /** Solution for {@link https://adventofcode.com/2022/day/20}. */
 public class GrovePositioningSystem {
@@ -20,19 +21,19 @@ public class GrovePositioningSystem {
     // Debug.enablePrint();
     // Debug.enableTimers();
 
-    Debug.startTimer("parse");
+    Stats.startTimer("parse");
     List<String> lines = InputHelper.linesFromResource(INPUT).collect(Collectors.toList());
 
     Node head = parseToCircularlyLinkedList(lines);
     Debug.println("Initial arrangement:");
     print(head);
-    Debug.endTimer("parse");
+    Stats.endTimer("parse");
 
-    Debug.startTimer("mix");
+    Stats.startTimer("mix");
     int length = length(head);
     List<Node> originalNodeOrder = nodeStream(head).collect(Collectors.toList());
     head = mix(head, originalNodeOrder, length);
-    Debug.endTimer("mix");
+    Stats.endTimer("mix");
 
     System.out.println("Part 1: " + computeKeyValueSum(head, length));
 
@@ -46,14 +47,15 @@ public class GrovePositioningSystem {
 
     // Mix ten times.
     for (int i = 0; i < 10; i++) {
-      Debug.startTimer("mix-" + (i + 1));
+      Stats.startTimer("mix-" + (i + 1));
       head = mix(head, originalNodeOrder, length);
       Debug.println("After %d rounds of mixing:", i + 1);
       print(head);
-      Debug.endTimer("mix-" + (i + 1));
+      Stats.endTimer("mix-" + (i + 1));
     }
 
     System.out.println("Part 2: " + computeKeyValueSum(head, length));
+    // Stats.print();
   }
 
   private static Node parseToCircularlyLinkedList(List<String> lines) {

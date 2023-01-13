@@ -60,4 +60,21 @@ public class IntArray {
   public String toString() {
     return Arrays.toString(array);
   }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+    private final IntStream.Builder streamBuilder = IntStream.builder();
+
+    public Builder add(int t) {
+      streamBuilder.add(t);
+      return this;
+    }
+
+    public IntArray build() {
+      return new IntArray(streamBuilder.build().toArray());
+    }
+  }
 }

@@ -1,11 +1,11 @@
 package aoc2022.day04;
 
+import aoccommon.InputHelper;
+import com.google.common.collect.Range;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import aoccommon.InputHelper;
-import com.google.common.collect.Range;
 
 /** Solution for {@link https://adventofcode.com/2022/day/4}. */
 public class CampCleanup {

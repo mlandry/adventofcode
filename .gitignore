@@ -1,4 +1,6 @@
 *.code-workspace
+.idea
+out
 # Bazel output files
 bazel*
 .theia

@@ -44,6 +44,7 @@ if language == "java":
     f.write(f"public class {classname} {{\n")
     f.write(f"\n")
     f.write(f"  private static final String INPUT = \"{package}/input.txt\";\n")
+    f.write(f"  // private static final String EXAMPLE = \"{package}/example.txt\";\n")
     f.write(f"\n")
     f.write(f"  public static void main(String [] args) throws Exception {{\n")
     f.write(f"  }}\n")
@@ -54,6 +55,11 @@ else:
 
 print(f"Writing input.txt ...")
 txt = os.path.join(directory, "input.txt")
+f = open(txt, "w")
+f.close()
+
+print(f"Writing example.txt ...")
+txt = os.path.join(directory, "example.txt")
 f = open(txt, "w")
 f.close()
 

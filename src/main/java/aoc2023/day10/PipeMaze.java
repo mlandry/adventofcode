@@ -1,9 +1,6 @@
 package aoc2023.day10;
 
-import aoccommon.Debug;
-import aoccommon.InputHelper;
-import aoccommon.Pair;
-import aoccommon.Point;
+import aoccommon.*;
 
 import java.util.*;
 import java.util.function.Function;
@@ -18,33 +15,13 @@ public class PipeMaze {
   private static final String INPUT = "aoc2023/day10/input.txt";
   private static final String EXAMPLE = "aoc2023/day10/example.txt";
 
-  private enum Direction {
-    NORTH,
-    EAST,
-    SOUTH,
-    WEST;
-
-    Direction opposite() {
-      return Direction.values()[(this.ordinal() + 2) % 4];
-    }
-  }
-
   private record Maze(List<String> rows) {
     Optional<Point> move(Point p, Direction dir) {
-      return switch (dir) {
-        case NORTH -> p.getY() > 0
-            ? Optional.of(Point.of(p.getX(), p.getY() - 1))
-            : Optional.empty();
-        case EAST -> p.getX() < rows.get(p.getY()).length() - 1
-            ? Optional.of(Point.of(p.getX() + 1, p.getY()))
-            : Optional.empty();
-        case SOUTH -> p.getY() < rows.size() - 1
-            ? Optional.of(Point.of(p.getX(), p.getY() + 1))
-            : Optional.empty();
-        case WEST -> p.getX() > 0
-            ? Optional.of(Point.of(p.getX() - 1, p.getY()))
-            : Optional.empty();
-      };
+      Point moved = dir.apply(p);
+      if (moved.getY() < 0 || moved.getY() >= rows.size() || moved.getX() < 0 || moved.getX() >= rows.get(moved.getY()).length()) {
+        return Optional.empty();
+      }
+      return Optional.of(moved);
     }
 
     Character at(Point p) {
@@ -68,12 +45,12 @@ public class PipeMaze {
   }
 
   private static Map<Character, List<Direction>> SPACES = Map.of(
-      '|', List.of(Direction.NORTH, Direction.SOUTH),
-      '-', List.of(Direction.EAST, Direction.WEST),
-      'L', List.of(Direction.NORTH, Direction.EAST),
-      'J', List.of(Direction.NORTH, Direction.WEST),
-      '7', List.of(Direction.SOUTH, Direction.WEST),
-      'F', List.of(Direction.SOUTH, Direction.EAST),
+      '|', List.of(Direction.UP, Direction.DOWN),
+      '-', List.of(Direction.RIGHT, Direction.LEFT),
+      'L', List.of(Direction.UP, Direction.RIGHT),
+      'J', List.of(Direction.UP, Direction.LEFT),
+      '7', List.of(Direction.DOWN, Direction.LEFT),
+      'F', List.of(Direction.DOWN, Direction.RIGHT),
       '.', List.of()
   );
 

@@ -32,6 +32,7 @@ public class IntArray {
     return this.array;
   }
 
+
   public IntArray copy() {
     return new IntArray(Arrays.copyOf(array, array.length));
   }
@@ -73,8 +74,15 @@ public class IntArray {
       return this;
     }
 
+    public Builder addAll(Builder other) {
+      other.streamBuilder.build().forEach(streamBuilder::add);
+      return this;
+    }
+
     public IntArray build() {
       return new IntArray(streamBuilder.build().toArray());
     }
   }
+
+
 }

@@ -5,7 +5,7 @@ import java.util.function.IntBinaryOperator;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
 
-public final record Point(IntArray coordinates) {
+public record Point(IntArray coordinates) {
 
   public static Point of(int... coordinates) {
     return new Point(IntArray.of(coordinates));

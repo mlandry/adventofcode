@@ -10,6 +10,10 @@ public final class Debug {
     LOGGING_ENABLED = true;
   }
 
+  public static void println() {
+    println("");
+  }
+
   public static void println(String fmt, Object... args) {
     if (!LOGGING_ENABLED) {
       return;

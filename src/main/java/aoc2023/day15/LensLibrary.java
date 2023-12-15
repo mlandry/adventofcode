@@ -6,14 +6,11 @@ import aoccommon.InputHelper;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * Solution for {@link https://adventofcode.com/2023/day/15}.
@@ -58,7 +55,7 @@ public class LensLibrary {
               break;
             case "=":
               int focalLength = Integer.parseInt(m.group(3));
-              boxes[box].compute(label, (l, old) -> focalLength);
+              boxes[box].put(label, focalLength);
               break;
             default:
               throw new IllegalArgumentException();

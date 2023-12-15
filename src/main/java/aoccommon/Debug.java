@@ -10,6 +10,10 @@ public final class Debug {
     LOGGING_ENABLED = true;
   }
 
+  public static boolean isPrintEnabled() {
+    return LOGGING_ENABLED;
+  }
+
   public static void println() {
     println("");
   }

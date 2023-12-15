@@ -60,14 +60,16 @@ public class LensLibrary {
             default:
               throw new IllegalArgumentException();
           }
-          Debug.println("After %s:", step);
-          IntStream.range(0, 256)
-              .filter(i -> !boxes[i].isEmpty())
-              .forEach(i -> {
-                Debug.println("Box %d: %s", i, boxes[i].entrySet().stream()
-                    .map(e -> String.format("[%s %d]", e.getKey(), e.getValue()))
-                    .collect(Collectors.joining(" ")));
-              });
+          if (Debug.isPrintEnabled()) {
+            Debug.println("After %s:", step);
+            IntStream.range(0, 256)
+                .filter(i -> !boxes[i].isEmpty())
+                .forEach(i -> {
+                  Debug.println("Box %d: %s", i, boxes[i].entrySet().stream()
+                      .map(e -> String.format("[%s %d]", e.getKey(), e.getValue()))
+                      .collect(Collectors.joining(" ")));
+                });
+          }
         });
 
     long power = IntStream.range(0, 256)

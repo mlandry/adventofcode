@@ -1,6 +1,8 @@
 package aoccommon;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
@@ -27,6 +29,37 @@ public record Point(IntArray coordinates) {
         },
         (builder) -> new Point(builder.build()));
 
+  }
+
+  public static Pair<Point, Point> boundingBox(Collection<Point> points) {
+    if (points.isEmpty()) {
+      return null;
+    }
+    Point min = null;
+    Point max = null;
+    Iterator<Point> iterator = points.iterator();
+    while (iterator.hasNext()) {
+      Point p = iterator.next();
+      if (min == null) {
+        min = p;
+      } else {
+        if (min.dimensions() != p.dimensions()) {
+          throw new IllegalArgumentException("mismatched dimension count");
+        }
+        final Point f = min;
+        min = Point.of(IntStream.range(0, p.dimensions()).map(i -> Math.min(p.getN(i), f.getN(i))).toArray());
+      }
+      if (max == null) {
+        max = p;
+      } else {
+        if (min.dimensions() != p.dimensions()) {
+          throw new IllegalArgumentException("mismatched dimension count");
+        }
+        final Point f = max;
+        max = Point.of(IntStream.range(0, p.dimensions()).map(i -> Math.max(p.getN(i), f.getN(i))).toArray());
+      }
+    }
+    return Pair.of(min, max);
   }
 
   public Point copy() {

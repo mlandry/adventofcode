@@ -40,6 +40,10 @@ public record Matrix<T>(List<List<T>> rows) {
     return rows.get(point.getY()).get(point.getX());
   }
 
+  public boolean contains(Point point) {
+    return point.getX() >= 0 && point.getX() < width() && point.getY() >= 0 && point.getY() < height();
+  }
+
   public void set(int row, int col, T value) {
     rows.get(row).set(col, value);
   }

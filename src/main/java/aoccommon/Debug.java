@@ -14,15 +14,19 @@ public final class Debug {
     return LOGGING_ENABLED;
   }
 
+  public static void print(String fmt, Object... args) {
+    if (!LOGGING_ENABLED) {
+      return;
+    }
+    System.out.print(String.format(fmt, args));
+  }
+
   public static void println() {
     println("");
   }
 
   public static void println(String fmt, Object... args) {
-    if (!LOGGING_ENABLED) {
-      return;
-    }
-    System.out.println(String.format(fmt, args));
+    print("%s\n", String.format(fmt, args));
   }
 
   public static void printlnAndWaitForInput(String fmt, Object... args) {

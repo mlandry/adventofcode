@@ -4,7 +4,6 @@ import aoccommon.*;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -16,7 +15,7 @@ public class FloorWillBeLava {
   private static final String EXAMPLE = "aoc2023/day16/example.txt";
 
   private record Contraption(Matrix<Character> matrix) {
-//    void print(Map<Point, Set<Direction>> energized) {
+    //    void print(Map<Point, Set<Direction>> energized) {
 //      for (int row = 0; row < matrix.height(); row++) {
 //        StringBuilder sb = new StringBuilder();
 //        for (int col = 0; col < matrix().width(); col++) {

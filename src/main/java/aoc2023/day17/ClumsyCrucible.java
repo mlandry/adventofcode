@@ -1,11 +1,16 @@
 package aoc2023.day17;
 
-import aoccommon.*;
+import aoccommon.Direction;
+import aoccommon.InputHelper;
+import aoccommon.Matrix;
+import aoccommon.Point;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Solution for {@link https://adventofcode.com/2023/day/17}. */
+/**
+ * Solution for {@link https://adventofcode.com/2023/day/17}.
+ */
 public class ClumsyCrucible {
 
   private static final String INPUT = "aoc2023/day17/input.txt";
@@ -24,7 +29,9 @@ public class ClumsyCrucible {
       return Integer.compare(heat, other.heat);
     }
   }
-  private record Visited(Point p, Direction d, int line) {}
+
+  private record Visited(Point p, Direction d, int line) {
+  }
 
   static int findMinimumHeatLoss(Matrix<Integer> matrix, int minLine, int maxLine) {
     Point start = Point.of(0, 0);
@@ -70,7 +77,7 @@ public class ClumsyCrucible {
     return -1;
   }
 
-  public static void main(String [] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     Matrix<Integer> matrix = new Matrix(InputHelper.linesFromResource(INPUT)
         .map(line -> line.chars().mapToObj(c -> c - '0').toList())
         .toList());

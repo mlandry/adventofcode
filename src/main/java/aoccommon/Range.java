@@ -1,17 +1,21 @@
 package aoccommon;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiFunction;
+
 /**
  * This class represents a range of comparable items of type T, with each
  * endpoint being
  * inclusive (closed) or exclusive (open).
  */
-public final record Range<T extends Comparable<T>> (Endpoint<T> lower, Endpoint<T> upper) {
+public record Range<T extends Comparable<T>>(Endpoint<T> lower, Endpoint<T> upper) {
 
   /**
    * Endpoint is a wrapper around a bound for a Range that may be inclusive
    * (closed) or exclusive (open).
    */
-  public final record Endpoint<T extends Comparable<T>> (T value, boolean inclusive) {
+  public record Endpoint<T extends Comparable<T>>(T value, boolean inclusive) {
     public static <T extends Comparable<T>> Endpoint<T> inclusive(T value) {
       return new Endpoint<>(value, true);
     }

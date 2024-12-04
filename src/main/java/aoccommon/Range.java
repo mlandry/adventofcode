@@ -1,9 +1,5 @@
 package aoccommon;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiFunction;
-
 /**
  * This class represents a range of comparable items of type T, with each
  * endpoint being

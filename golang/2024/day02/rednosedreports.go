@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -10,7 +9,7 @@ import (
 )
 
 func isSafe(report []int, skip int) bool {
-	var increasing bool
+	var increasing *bool
 	prev := report[0]
 	start := 1
 	if skip == 0 {
@@ -26,18 +25,20 @@ func isSafe(report []int, skip int) bool {
 		if d == 0 {
 			return false
 		} else if d > 0 {
-			if i == start {
-				increasing = true
-			} else if !increasing {
+			if increasing == nil {
+				t := true
+				increasing = &t
+			} else if !(*increasing) {
 				return false
 			}
 			if d > 3 {
 				return false
 			}
 		} else {
-			if i == start {
-				increasing = false
-			} else if increasing {
+			if increasing == nil {
+				f := false
+				increasing = &f
+			} else if *increasing {
 				return false
 			}
 			if d < -3 {
@@ -55,7 +56,6 @@ func isSafeWithDampening(report []int) bool {
 			return true
 		}
 	}
-	fmt.Printf("%+v\n", report)
 	return false
 }
 

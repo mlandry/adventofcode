@@ -7,6 +7,15 @@ import (
 	"os"
 )
 
+type dir int
+
+const (
+	up dir = iota
+	down
+	left
+	right
+)
+
 type position struct {
 	row int
 	col int
@@ -49,21 +58,17 @@ func (f *fencer) inBounds(p position) bool {
 	return p.row >= 0 && p.row < len(f.garden) && p.col >= 0 && p.col < len(f.garden[p.row])
 }
 
+// Strategy function for counting perimeter cost of a fence.
 type perimeterStrategy = func(edges map[position]map[dir]bool, pos position, d dir) bool
 
+// Simple strategy - every edge space counts for 1.
 var countPerimeter = func(edges map[position]map[dir]bool, pos position, d dir) bool {
 	return true
 }
 
-type dir int
-
-const (
-	up dir = iota
-	down
-	left
-	right
-)
-
+// Strategy where each "side" (adjacent squares with aligned edges) counts for 1.
+// We check if either of our neighbours has already counted an edge in this direction
+// and only increment if not.
 var countSides = func(edges map[position]map[dir]bool, pos position, d dir) bool {
 	switch d {
 	case up:
@@ -90,6 +95,8 @@ var countSides = func(edges map[position]map[dir]bool, pos position, d dir) bool
 	panic("invalid dir " + string(d))
 }
 
+// Fence a plot of one kind of plant, starting at start position.
+// Perimeter is counted according to the strategy function.
 func (f *fencer) fencePlot(start position, shouldIncrementPerimter perimeterStrategy) *fence {
 	fnc := &fence{plant: f.garden[start.row][start.col], area: 1}
 	edges := map[position]map[dir]bool{}

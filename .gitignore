@@ -8,3 +8,7 @@ bazel*
 .theia
 *.dockerenv*
 *.DS_STORE
+.vscode
+node_modules/
+package-lock.json
+yarn.lock

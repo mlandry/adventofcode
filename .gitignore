@@ -12,3 +12,5 @@ bazel*
 node_modules/
 package-lock.json
 yarn.lock
+**/input.txt
+**/example.txt
